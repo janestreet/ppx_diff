@@ -1,0 +1,4 @@
+(library (name ppx_ldiff) (kind ppx_rewriter)
+ (libraries core core_kernel.nonempty_list ppxlib ldiffable)
+ (ppx_runtime_libraries ldiffable)
+ (preprocess (pps ppx_enumerate ppx_compare ppxlib.metaquot)))
