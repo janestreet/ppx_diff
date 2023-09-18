@@ -1,2 +1,2 @@
-(library (name ldiffable) (libraries core gel ldiffable_cinaps)
- (preprocess (pps ppx_jane)))
+(library (name ldiffable) (public_name ppx_diff.diffable)
+ (libraries core gel ldiffable_cinaps) (preprocess (pps ppx_jane)))
