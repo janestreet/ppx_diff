@@ -103,7 +103,7 @@ end = struct
       in
       variant
       |> Type_kind.constrs
-      |> List.concat_map ~f:(fun { module_; _ } ->
+      |> List.concat_map ~f:(fun { Type_kind.module_; _ } ->
            match module_ with
            | None -> []
            | Some module_ -> hds module_)

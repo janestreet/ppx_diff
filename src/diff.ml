@@ -413,7 +413,7 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
 
 let add_prefix t ~prefix = { t with prefix = Items.concat [ prefix; t.prefix ] }
 
-let to_module t ~context ~type_to_diff_declaration =
+let to_module t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
   let { Context.builder; _ } = context in
   to_items t ~type_to_diff_declaration ~context
   |> Items.to_module

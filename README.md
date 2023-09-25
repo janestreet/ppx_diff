@@ -1,28 +1,6 @@
 ppx_ldiff
 =========
 
-<style>
-aside {
-    padding: 0.5em;
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-    background: #00000022;
-    border-left: 5px solid var(--color-js-darker-blue);
-    border-radius: 3px;
-    position: relative;
-}
-
-aside.warning {
-    border-left-color: #ff2f00;
-}
-</style>
-
-<aside class="warning">
-This ppx is new and still being beta-tested. It is intended to be a
-more-performant replacement for ppx_diff, and should hopefully be available for general
-use sometime in the summer of 2023 
-</aside>
-
 Generation of diffs and update functions for ocaml types.
 
 `ppx_ldiff` is a ppx rewriter that generates the implementation of [Ldiffable.S].
@@ -124,8 +102,8 @@ will never raise.
 
 
 However, applying a hand-crafted diff might raise for some types (in particular for
-variants when the diff is for an unexpected variant, and for maps if adding an already
-existing alement or applying diff to an non-existing element)
+variants when the diff is for an unexpected variant, and for maps if applying diff to an
+non-existing element)
 
 ## Nesting
 By default, diffs will be "nested". This means if a type deriving `ldiff` references other
@@ -959,4 +937,31 @@ module Range : sig
     }
   [@@deriving ldiff ~how:"abstract"]
 end
+```
+
+# Polling state RPC
+
+`ppx_ldiff` can be used with `Polling_state_rpc` by calling `Ldiffable_polling_state_rpc_response.Polling_state_rpc_response.Make`
+
+For example, the following will work:
+
+```ocaml
+module Query = Unit
+
+module Response = struct
+  type t =
+    { foo : int
+    ; bar : float
+    ; baz : char
+    } [@@deriving sexp, bin_io, ldiff]
+end
+
+let polling_state_rpc = 
+    Polling_state_rpc.create
+      ~name:"get-response"
+      ~version:0
+      ~query_equal:Query.equal
+      ~bin_query:Query.bin_t
+      (module Ldiffable_polling_state_rpc_response.Polling_state_rpc_response.Make
+           (Response))
 ```
