@@ -114,13 +114,15 @@ let generator sig_or_struct ~f =
       empty
       +> arg How_to_diff.Label.how (Ast_pattern.estring __)
       +> arg How_to_diff.Label.key How_to_diff.Type_.pattern
-      +> arg How_to_diff.Label.elt How_to_diff.Type_.pattern)
+      +> arg How_to_diff.Label.elt How_to_diff.Type_.pattern
+      +> What_to_derive.Extra.arg)
     (fun ~(loc : Location.t)
          ~path:(_ : string)
          ((rec_flag : rec_flag), (type_declarations : type_declaration list))
          how
          key
-         elt ->
+         elt
+         extra_derive ->
       let (builder : Builder.t) = Builder.create (Ast_builder.make loc) in
       let how_to_diff = How_to_diff.Maybe_abstract.create ~how ~key ~elt ~builder in
       let open (val builder : Builder.S) in
@@ -138,7 +140,9 @@ let generator sig_or_struct ~f =
           | Some (_ : How_to_diff.Atomic.t) -> ()
           | _ -> raise_error "recursive types are not supported (except for atomic diffs)")
        | Nonrecursive -> validate_rec_flag type_to_diff_declaration rec_flag ~builder);
-      let what_to_derive = What_to_derive.create td how_to_diff sig_or_struct in
+      let what_to_derive =
+        What_to_derive.create ?extra:extra_derive td how_to_diff sig_or_struct ~builder
+      in
       let context =
         { Context.builder
         ; what_to_derive

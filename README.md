@@ -43,7 +43,8 @@ In an .ml, definitions will be generated.
 You will likely want your diff type to derive some subset of `bin_io`, `sexp`, `of_sexp`,
 `sexp_of`.
 
-`[@@deriving ldiff]` will include the same subset of the above as those included on your original type.
+By default `[@@deriving ldiff]` will include the same subset of the above as those
+included on your original type.
 
 So e.g. if you define a type as follows:
 
@@ -64,6 +65,16 @@ module Diff : sig
   val get : from : derived_on -> to_ : derived_on -> local_ t Optional_diff.t
   val apply_exn : derived_on -> t -> derived_on
 end
+```
+
+If you want to derive additional items on your diff type, you can achieve this using the
+`extra_derive` argument.
+
+For instance, you can write:
+
+<!--BEGIN type_decl-->
+```ocaml
+type t [@@deriving sexp_of, ldiff ~extra_derive:[of_sexp ; bin_io]]
 ```
 <!--END-->
 

@@ -18,8 +18,25 @@ let attribute_name = "deriving"
 type t = Entry.t list
 
 let empty = []
+let add t entry = if List.exists t ~f:(Entry.( = ) entry) then t else t @ [ entry ]
+let mem = List.mem ~equal:String.equal
 
-let create (td : type_declaration) how_to_diff sig_or_struct =
+module Extra = struct
+  type t = Entry.t list
+
+  let label = "extra_derive"
+  let pattern = Ast_pattern.(elist (pexp_ident (lident __)))
+  let arg = Deriving.Args.arg label pattern
+end
+
+let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
+  let open (val builder : Builder.S) in
+  let extra =
+    match extra with
+    | None -> []
+    | Some [] -> raise_error (sprintf "%s should not be empty" Extra.label)
+    | Some (_ :: _ as extra) -> extra
+  in
   let deriving =
     List.concat_map td.ptype_attributes ~f:(fun { attr_name; attr_payload; _ } ->
       if not
@@ -42,16 +59,32 @@ let create (td : type_declaration) how_to_diff sig_or_struct =
               get expr
             | _ -> [])))
   in
-  List.filter deriving ~f:(Set.mem Entry.(Set.of_list [ sexp_of; of_sexp; sexp; bin_io ]))
-  @
-  match (how_to_diff : How_to_diff.Atomic.t option), sig_or_struct with
-  | None, _ | _, `sig_ -> []
-  | Some { using_compare }, `struct_ ->
-    [ (if using_compare then Entry.compare else Entry.equal) ]
+  let default =
+    List.filter
+      deriving
+      ~f:(Set.mem Entry.(Set.of_list [ sexp_of; of_sexp; sexp; bin_io ]))
+    @
+    match (how_to_diff : How_to_diff.Atomic.t option), sig_or_struct with
+    | None, _ | _, `sig_ -> []
+    | Some { using_compare }, `struct_ ->
+      [ (if using_compare then Entry.compare else Entry.equal) ]
+  in
+  match List.find_all_dups extra ~compare:String.compare with
+  | [] ->
+    List.fold extra ~init:default ~f:(fun t entry ->
+      if mem t entry
+      then
+        raise_error
+          (sprintf
+             "Unnecessary entry %s in %s. %s is already derived by default"
+             entry
+             Extra.label
+             entry)
+      else add t entry)
+  | dups ->
+    raise_error
+      (sprintf "Duplicate entries in %s: %s" Extra.label (String.concat ~sep:", " dups))
 ;;
-
-let add t entry = if List.exists t ~f:(Entry.( = ) entry) then t else t @ [ entry ]
-let mem = List.mem ~equal:String.equal
 
 let attribute t ~builder =
   let open (val builder : Builder.S) in

@@ -13,10 +13,24 @@ module Entry : sig
   val variants : t
 end
 
+module Extra : sig
+  type t
+
+  val arg : t option Deriving.Args.param
+end
+
 type t
 
 val empty : t
-val create : type_declaration -> How_to_diff.Atomic.t option -> [ `sig_ | `struct_ ] -> t
+
+val create
+  :  ?extra:Extra.t
+  -> type_declaration
+  -> How_to_diff.Atomic.t option
+  -> [ `sig_ | `struct_ ]
+  -> builder:Builder.t
+  -> t
+
 val add : t -> Entry.t -> t
 val mem : t -> Entry.t -> bool
 val attribute : t -> builder:Builder.t -> attribute option
