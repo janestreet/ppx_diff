@@ -94,7 +94,8 @@ let create ~type_to_diff_declaration ~atomic ~sig_or_struct ~builder =
     match kind_to_diff with
     | Core (Constr { type_name; module_ = None; params = [] }, ()) as kind ->
       kind, Type_name.( = ) type_name Type_name.t
-    | (Core _ | Abstract) as kind -> kind, false
+    | Core _ as kind -> kind, false
+    | Abstract -> Core pointer, false
     | Record { fields; local; equal_to = _ } ->
       Record { fields; local; equal_to = Some pointer }, false
     | Variant { rows; equal_to = _ } -> Variant { rows; equal_to = Some pointer }, false
