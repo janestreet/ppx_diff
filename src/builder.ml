@@ -2,8 +2,13 @@ open! Core
 open Ppxlib
 open Shared
 
-module type S = sig
+module type Ast_builders = sig
   include Ast_builder.S
+  include Ppxlib_jane.Ast_builder.S_with_implicit_loc
+end
+
+module type S = sig
+  include Ast_builders
 
   val p : Build_helper.t -> pattern
   val e : Build_helper.t -> expression
@@ -12,7 +17,7 @@ end
 
 type t = (module S)
 
-let create (module M : Ast_builder.S) =
+let create (module M : Ast_builders) =
   let module M : S = struct
     include M
     open Build_helper

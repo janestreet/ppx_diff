@@ -115,15 +115,23 @@ let generator sig_or_struct ~f =
       +> arg How_to_diff.Label.how (Ast_pattern.estring __)
       +> arg How_to_diff.Label.key How_to_diff.Type_.pattern
       +> arg How_to_diff.Label.elt How_to_diff.Type_.pattern
-      +> What_to_derive.Extra.arg)
+      +> What_to_derive.Extra.arg
+      +> arg "stable_version" (Ast_pattern.eint __))
     (fun ~(loc : Location.t)
          ~path:(_ : string)
          ((rec_flag : rec_flag), (type_declarations : type_declaration list))
          how
          key
          elt
-         extra_derive ->
-      let (builder : Builder.t) = Builder.create (Ast_builder.make loc) in
+         extra_derive
+         stable_version ->
+      let (builder : Builder.t) =
+        Builder.create
+          (module struct
+            include (val Ast_builder.make loc)
+            include (val Ppxlib_jane.Ast_builder.make loc)
+          end)
+      in
       let how_to_diff = How_to_diff.Maybe_abstract.create ~how ~key ~elt ~builder in
       let open (val builder : Builder.S) in
       let td =
@@ -148,6 +156,7 @@ let generator sig_or_struct ~f =
         ; what_to_derive
         ; all_params = type_to_diff_declaration.params
         ; sig_or_struct
+        ; stable_version = Option.map stable_version ~f:(Stable_version.of_int ~builder)
         }
       in
       let t = generate context type_to_diff_declaration ~how_to_diff in

@@ -17,28 +17,38 @@ module Functions = struct
     let params = derived_on_type_declaration.Type_declaration.params in
     let vars = List.map params ~f:Type_param.var in
     let open (val builder : Builder.S) in
-    let pointer ?local type_declaration =
-      type_declaration
-      |> Type_declaration.pointer
-      |> Type_kind.core_to_ppx ?local ~builder
+    let pointer type_declaration =
+      type_declaration |> Type_declaration.pointer |> Type_kind.core_to_ppx ~builder
     in
-    let get_base derived_on t =
-      [%type: from:[%t derived_on] -> to_:[%t derived_on] -> [%t t] Optional_diff.t]
+    let get_base (derived_on_mode, derived_on) t =
+      let arg label =
+        { arg_label = Labelled label; arg_mode = derived_on_mode; arg_type = derived_on }
+      in
+      tarrow
+        [ arg "from"; arg "to_" ]
+        { result_mode = Some Local; result_type = [%type: [%t t] Optional_diff.t] }
     in
-    let apply_base derived_on t = [%type: [%t derived_on] -> [%t t] -> [%t derived_on]] in
+    let apply_base (derived_on_mode, derived_on) t =
+      tarrow
+        [ { arg_label = Nolabel; arg_mode = derived_on_mode; arg_type = derived_on }
+        ; { arg_label = Nolabel; arg_mode = None; arg_type = t }
+        ]
+        { result_mode = derived_on_mode; result_type = derived_on }
+    in
     let fun_type base =
       let v = Var.core_type ~builder in
-      List.fold_right
-        (* Generate the parametrized functions, e.g.
-           (from:'a -> to_:'a -> local_ 'a_diff Optional_diff.t)
-           (from:'b -> to_:'b -> local_ 'b_diff Optional_diff.t)
-        *)
-        (List.map vars ~f:(fun var -> base (v var) (v (Var.diff_var var))))
-        ~init:
-          (base
-             (pointer derived_on_type_declaration ~local:derived_on_type_is_local)
-             (pointer diff_type_declaration))
-        ~f:(ptyp_arrow Nolabel)
+      let derived_on_mode = if derived_on_type_is_local then Some Local else None in
+      (* Generate the parametrized functions, e.g.
+         (from:'a -> to_:'a -> local_ 'a_diff Optional_diff.t)
+         (from:'b -> to_:'b -> local_ 'b_diff Optional_diff.t)
+      *)
+      tarrow_maybe
+        (List.map vars ~f:(fun var ->
+           let arg_type = base (None, v var) (v (Var.diff_var var)) in
+           { arg_label = Nolabel; arg_mode = None; arg_type }))
+        (base
+           (derived_on_mode, pointer derived_on_type_declaration)
+           (pointer diff_type_declaration))
     in
     let sig_items =
       [%sig:
@@ -187,22 +197,23 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
         String.uncapitalize (Variant_row_name.to_string row_name)
       in
       let create_type =
-        List.fold_right
-          single_kind
-          ~init:[%type: unit -> [%t t_]]
-          ~f:(fun (row_name, row_type) acc ->
-          let arg_name = create_arg_name row_name in
-          ptyp_arrow (Optional arg_name) (core_to_ppx row_type) acc)
+        tarrow_maybe
+          (List.map single_kind ~f:(fun (row_name, row_type) ->
+             let arg_name = create_arg_name row_name in
+             let arg_type = core_to_ppx row_type in
+             { arg_label = Optional arg_name; arg_mode = None; arg_type }))
+          [%type: unit -> [%t t_]]
       in
       let create_of_variants_type =
-        List.fold_right single_kind ~init:t_ ~f:(fun (row_name, row_type) acc ->
-          let arg_name = create_arg_name row_name in
-          let type_ =
-            [%type:
-              ([%t core_to_ppx row_type], [%t core_to_ppx single_type]) Of_variant.t]
-            |> Global_or_local.add_to_core_type Local ~builder
-          in
-          ptyp_arrow (Labelled arg_name) type_ acc)
+        tarrow_maybe
+          (List.map single_kind ~f:(fun (row_name, row_type) ->
+             let arg_name = create_arg_name row_name in
+             let arg_type =
+               [%type:
+                 ([%t core_to_ppx row_type], [%t core_to_ppx single_type]) Of_variant.t]
+             in
+             { arg_label = Labelled arg_name; arg_mode = Some Local; arg_type }))
+          t_
       in
       let create_arg_names =
         List.map single_kind ~f:(fun (row_name, _) -> create_arg_name row_name)

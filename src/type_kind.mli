@@ -55,7 +55,7 @@ val of_ppx_kind
   -> How_to_diff.t t * How_to_diff.Atomic.t option
 
 val to_ppx_kind : unit t -> builder:Builder.t -> ppx_kind
-val core_to_ppx : ?local:bool -> unit core -> builder:Builder.t -> Ppxlib.core_type
+val core_to_ppx : unit core -> builder:Builder.t -> Ppxlib.core_type
 val core_of_ppx : core_type -> builder:Builder.t -> How_to_diff.t core
 val vars : _ t -> Var.t list
 val constrs : 'a t -> 'a constr list

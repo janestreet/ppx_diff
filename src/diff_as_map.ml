@@ -7,7 +7,7 @@ let create
   ~context
   ~(create_core : Core_diff.Create.t)
   =
-  let { Context.builder; _ } = context in
+  let { Context.builder; stable_version; _ } = context in
   let open (val builder : Builder.S) in
   (* [value] = v ?[@ldiff.xxx]
      [map_module_name] = Map_module
@@ -28,6 +28,15 @@ let create
       }
     =
     value_diff
+  in
+  let module_ =
+    let prefix = [ "Ldiffable"; "Map_diff" ] in
+    let suffix =
+      match stable_version with
+      | None -> []
+      | Some One -> [ "Stable"; "V1" ]
+    in
+    List.map ~f:Module_name.of_string (prefix @ suffix) |> Longident_helper.of_simple_list
   in
   let diff_type =
     (* [Map_module_name].Key.t *)
@@ -61,13 +70,16 @@ let create
     Type_kind.Constr
       { params =
           [ key, (); value |> Type_kind.map_core ~f:(const ()); value_diff_type, () ]
-      ; module_ =
-          List.map [ "Ldiffable"; "Map_diff" ] ~f:Module_name.of_string
-          |> Longident_helper.of_simple_list
+      ; module_
       ; type_name = Type_name.t
       }
   in
-  let get = [%expr Ldiffable.Map_diff.get [%e get_value_diff]] in
-  let apply_exn = [%expr Ldiffable.Map_diff.apply_exn [%e apply_value_diff]] in
+  let module_ = Option.map module_ ~f:(Longident_helper.map ~f:Module_name.to_string) in
+  let fn name =
+    Longident_helper.add_suffix module_ ~suffix:[ Function_name.to_string name ]
+    |> Longident_helper.to_expression ~builder
+  in
+  let get = [%expr [%e fn Function_name.get] [%e get_value_diff]] in
+  let apply_exn = [%expr [%e fn Function_name.apply_exn] [%e apply_value_diff]] in
   { Core_diff.diff_type; functions = { get; apply_exn } }
 ;;

@@ -44,35 +44,32 @@ type 'extra t =
       ; local : bool
       }
 
-let rec core_to_ppx ?(local = false) (core : unit core) ~builder =
+let rec core_to_ppx (core : unit core) ~builder =
   let core_kind, () = core in
   let open (val builder : Builder.S) in
-  let manifest =
-    match core_kind with
-    | Var v -> Var.core_type v ~builder
-    | Tuple l -> ptyp_tuple (List.map l ~f:(fun t -> core_to_ppx t ~builder))
-    | Constr { params; module_; type_name } ->
-      let lident_helper =
-        module_
-        |> Option.map ~f:(Longident_helper.map ~f:Module_name.to_string)
-        |> Longident_helper.add_suffix ~suffix:[ Type_name.to_string type_name ]
-      in
-      ptyp_constr
-        (Located.mk (Longident_helper.to_longident lident_helper))
-        (List.map params ~f:(fun t -> core_to_ppx t ~builder))
-    | Polymorphic_variant variants ->
-      ptyp_variant
-        (List.map variants ~f:(fun (variant_name, variant_type) ->
-           let bool, types =
-             match variant_type with
-             | None -> true, []
-             | Some core -> false, [ core_to_ppx core ~builder ]
-           in
-           rtag (Located.mk (Variant_row_name.to_string variant_name)) bool types))
-        Closed
-        None
-  in
-  if not local then manifest else Global_or_local.add_to_core_type Local manifest ~builder
+  match core_kind with
+  | Var v -> Var.core_type v ~builder
+  | Tuple l -> ptyp_tuple (List.map l ~f:(fun t -> core_to_ppx t ~builder))
+  | Constr { params; module_; type_name } ->
+    let lident_helper =
+      module_
+      |> Option.map ~f:(Longident_helper.map ~f:Module_name.to_string)
+      |> Longident_helper.add_suffix ~suffix:[ Type_name.to_string type_name ]
+    in
+    ptyp_constr
+      (Located.mk (Longident_helper.to_longident lident_helper))
+      (List.map params ~f:(fun t -> core_to_ppx t ~builder))
+  | Polymorphic_variant variants ->
+    ptyp_variant
+      (List.map variants ~f:(fun (variant_name, variant_type) ->
+         let bool, types =
+           match variant_type with
+           | None -> true, []
+           | Some core -> false, [ core_to_ppx core ~builder ]
+         in
+         rtag (Located.mk (Variant_row_name.to_string variant_name)) bool types))
+      Closed
+      None
 ;;
 
 let label_declarations record_fields ~builder =
@@ -84,13 +81,8 @@ let label_declarations record_fields ~builder =
         ~type_:(core_to_ppx field_type ~builder)
         ~mutable_:(if mutable_ then Mutable else Immutable)
     in
-    if not global
-    then declaration
-    else
-      { declaration with
-        pld_attributes =
-          declaration.pld_attributes @ [ Global_or_local.attribute Global ~builder ]
-      })
+    let modality = if global then Some Global else None in
+    modality, declaration)
 ;;
 
 let to_ppx_kind t ~builder =
@@ -99,7 +91,7 @@ let to_ppx_kind t ~builder =
   | Abstract -> Ptype_abstract, None
   | Core core -> Ptype_abstract, Some (core_to_ppx core ~builder)
   | Record { fields; local = (_ : bool); equal_to } ->
-    ( Ptype_record (label_declarations fields ~builder)
+    ( ptype_record (label_declarations fields ~builder)
     , Option.map equal_to ~f:(core_to_ppx ~builder) )
   | Variant { rows; equal_to } ->
     ( Ptype_variant
@@ -114,7 +106,7 @@ let to_ppx_kind t ~builder =
                 | Some (Inlined_tuple l) ->
                   Pcstr_tuple (List.map l ~f:(fun t -> core_to_ppx t ~builder))
                 | Some (Inlined_record fields) ->
-                  Pcstr_record (label_declarations fields ~builder))))
+                  pcstr_record (label_declarations fields ~builder))))
     , Option.map equal_to ~f:(core_to_ppx ~builder) )
 ;;
 
@@ -339,13 +331,15 @@ let rec create_core core_type ~builder : How_to_diff.t core =
 let core_of_ppx = create_core
 
 let create_record fields ~builder =
+  let open (val builder : Builder.S) in
   List.map fields ~f:(fun (field : label_declaration) ->
-    let { pld_name; pld_mutable; pld_type; pld_loc = _; pld_attributes } = field in
-    let global_attribute = Global_or_local.attribute Global ~builder in
+    let modality, field = get_label_declaration_modality field in
     let global =
-      List.exists pld_attributes ~f:(fun { attr_name; _ } ->
-        String.( = ) attr_name.txt global_attribute.attr_name.txt)
+      match modality with
+      | Some Global -> true
+      | None -> false
     in
+    let { pld_name; pld_mutable; pld_type; pld_loc = _; pld_attributes = _ } = field in
     let field_type =
       let kind, how_to_diff = create_core pld_type ~builder in
       let how_to_diff =

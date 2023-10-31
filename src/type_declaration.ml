@@ -32,7 +32,15 @@ let create td ~builder ~how_to_diff =
 ;;
 
 let to_items ?(flags = Flags.empty) (t : unit t) ~context =
-  let { Context.builder; what_to_derive; all_params = _; sig_or_struct = _ } = context in
+  let { Context.builder
+      ; what_to_derive
+      ; all_params = _
+      ; sig_or_struct = _
+      ; stable_version = _
+      }
+    =
+    context
+  in
   let open (val builder : Builder.S) in
   let { kind; name; params; unboxed } = t in
   let { Flags.private_; nonrec_ } = flags in

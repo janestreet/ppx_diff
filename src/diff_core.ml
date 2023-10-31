@@ -13,6 +13,6 @@ let rec create core ~context =
      | Polymorphic_variant variant ->
        Diff_variant.create_polymorphic variant ~create_core ~context)
   | Some (Atomic atomic) -> Diff_atomic.create_core kind ~atomic ~sig_or_struct ~builder
-  | Some (As_set { elt }) -> Diff_as_set.create kind ~builder ~elt
+  | Some (As_set { elt }) -> Diff_as_set.create kind ~context ~elt
   | Some (As_map { key }) -> Diff_as_map.create kind ~context ~create_core ~key
 ;;

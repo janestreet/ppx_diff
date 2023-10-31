@@ -1,6 +1,7 @@
 open Core
 
-let create kind ~elt ~builder =
+let create kind ~elt ~context =
+  let { Context.builder; stable_version; _ } = context in
   let open (val builder : Builder.S) in
   let how_to_diff = How_to_diff.Custom.As_set { elt } in
   let set_module_name, set_type_name =
@@ -39,17 +40,25 @@ let create kind ~elt ~builder =
         ; type_name = Type_name.t
         }
   in
+  let module_ =
+    let prefix = [ "Ldiffable"; "Set_diff" ] in
+    let suffix =
+      match stable_version with
+      | None -> []
+      | Some One -> [ "Stable"; "V1" ]
+    in
+    List.map ~f:Module_name.of_string (prefix @ suffix) |> Longident_helper.of_simple_list
+  in
   (* [Set_module_name].Elt.t Ldiffable.Set_diff.t *)
   let diff_type =
-    Type_kind.Constr
-      { params = [ elt, () ]
-      ; module_ =
-          List.map ~f:Module_name.of_string [ "Ldiffable"; "Set_diff" ]
-          |> Longident_helper.of_simple_list
-      ; type_name = Type_name.t
-      }
+    Type_kind.Constr { params = [ elt, () ]; module_; type_name = Type_name.t }
   in
-  let get = [%expr Ldiffable.Set_diff.get] in
-  let apply_exn = [%expr Ldiffable.Set_diff.apply_exn] in
-  { Core_diff.diff_type; functions = { get; apply_exn } }
+  let module_ = Option.map module_ ~f:(Longident_helper.map ~f:Module_name.to_string) in
+  let fn name =
+    Longident_helper.add_suffix module_ ~suffix:[ Function_name.to_string name ]
+    |> Longident_helper.to_expression ~builder
+  in
+  { Core_diff.diff_type
+  ; functions = { get = fn Function_name.get; apply_exn = fn Function_name.apply_exn }
+  }
 ;;
