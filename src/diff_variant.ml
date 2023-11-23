@@ -18,7 +18,6 @@
         | Diff_b of b_diff
         | Diff_c of c_diff
    }]
-
 *)
 open Core
 open Ppxlib

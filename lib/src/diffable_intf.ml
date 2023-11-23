@@ -21,3 +21,15 @@ module type S1 = sig
 
   module Diff : Diff_intf.S1 with type 'a derived_on = 'a t
 end
+
+module type S2_plain = sig
+  type ('a, 'b) t
+
+  module Diff : Diff_intf.S2_plain with type ('a, 'b) derived_on = ('a, 'b) t
+end
+
+module type S2 = sig
+  type ('a, 'b) t
+
+  module Diff : Diff_intf.S2 with type ('a, 'b) derived_on = ('a, 'b) t
+end

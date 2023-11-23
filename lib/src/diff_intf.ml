@@ -39,3 +39,32 @@ module type S1 = sig
       with type 'a derived_on := 'a derived_on
        and type ('a, 'a_diff) t := ('a, 'a_diff) t
 end
+
+module type S2_plain = sig
+  type ('a, 'b) derived_on
+  type ('a, 'b, 'a_diff, 'b_diff) t
+
+  val get
+    :  (from:'a -> to_:'a -> 'a_diff Optional_diff.t)
+    -> (from:'b -> to_:'b -> 'b_diff Optional_diff.t)
+    -> from:('a, 'b) derived_on
+    -> to_:('a, 'b) derived_on
+    -> ('a, 'b, 'a_diff, 'b_diff) t Optional_diff.t
+
+  val apply_exn
+    :  ('a -> 'a_diff -> 'a)
+    -> ('b -> 'b_diff -> 'b)
+    -> ('a, 'b) derived_on
+    -> ('a, 'b, 'a_diff, 'b_diff) t
+    -> ('a, 'b) derived_on
+end
+
+module type S2 = sig
+  type ('a, 'b) derived_on
+  type ('a, 'b, 'a_diff, 'b_diff) t [@@deriving sexp, bin_io]
+
+  include
+    S2_plain
+      with type ('a, 'b) derived_on := ('a, 'b) derived_on
+       and type ('a, 'b, 'a_diff, 'b_diff) t := ('a, 'b, 'a_diff, 'b_diff) t
+end
