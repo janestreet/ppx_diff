@@ -12,6 +12,7 @@ module Stable : sig
 
     val get : from:('a, 'cmp) Set.t -> to_:('a, 'cmp) Set.t -> 'a t Optional_diff.t
     val apply_exn : ('a, 'cmp) Set.t -> 'a t -> ('a, 'cmp) Set.t
+    val of_list_exn : 'a t list -> 'a t Optional_diff.t
 
     module Make (S : sig
       module Elt : sig

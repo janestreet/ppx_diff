@@ -52,8 +52,8 @@ let generate context type_to_diff_declaration ~how_to_diff : Items.t =
       Diff_atomic.create ~type_to_diff_declaration ~atomic ~builder ~sig_or_struct
   in
   let prefix =
-    { Items.sig_items = [%sig: open! Ldiffable.For_ppx]
-    ; struct_items = Ok [%str open! Ldiffable.For_ppx]
+    { Items.sig_items = [%sig: open! Diffable.For_ppx]
+    ; struct_items = Ok [%str open! Diffable.For_ppx]
     }
   in
   let type_to_diff_declaration =
@@ -72,10 +72,10 @@ let validate_rec_flag (td : How_to_diff.t Type_declaration.t) rec_flag ~builder 
      | _ ->
        (* [nonrec] won't work for most types. E.g.
           {[
-            type t = int [@@deriving ldiff]
+            type t = int [@@deriving diff]
 
             module M = struct
-              type nonrec t = t * string [@@deriving_inline ldiff]
+              type nonrec t = t * string [@@deriving_inline diff]
 
               module Diff = struct
                 type derived_on = t

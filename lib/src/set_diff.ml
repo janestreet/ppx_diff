@@ -32,6 +32,11 @@ module Stable = struct
         | Change.Add set -> Set.add acc set)
     ;;
 
+    let of_list_exn = function
+      | [] -> Optional_diff.none
+      | _ :: _ as l -> Optional_diff.return (List.concat l)
+    ;;
+
     module Make (S : sig
       module Elt : sig
         type t
@@ -42,6 +47,7 @@ module Stable = struct
     end) : Diff_intf.S_plain with type derived_on := S.t and type t := S.Elt.t t = struct
       let get = get
       let apply_exn = apply_exn
+      let of_list_exn = of_list_exn
     end
   end
 end

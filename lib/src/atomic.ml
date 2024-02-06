@@ -11,6 +11,11 @@ struct
   ;;
 
   let[@inline] apply_exn _ t = t
+
+  let[@inline] of_list_exn = function
+    | [] -> Optional_diff.none
+    | _ :: _ as l -> Optional_diff.return (List.last_exn l)
+  ;;
 end
 
 module Make_diff_plain (M : sig

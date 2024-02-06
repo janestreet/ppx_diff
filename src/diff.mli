@@ -1,4 +1,4 @@
-(* Represents the contents of a module which implements Ldiffable.Diff.S_plain *)
+(* Represents the contents of a module which implements Diffable.Diff.S_plain *)
 open! Core
 open Ppxlib
 
@@ -6,6 +6,7 @@ module Functions : sig
   type t =
     { get : expression
     ; apply_exn : expression
+    ; of_list_exn : expression
     }
 end
 

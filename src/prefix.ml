@@ -8,8 +8,10 @@ let from = "from"
 let to_ = "to_"
 let get = Function_name.(to_string get)
 let apply_exn = Function_name.(to_string apply_exn)
+let of_list_exn = Function_name.(to_string of_list_exn)
 let to_string = Fn.id
 let of_string = Fn.id
+let any = "_"
 
 let to_prefix = function
   | None -> ""

@@ -28,7 +28,7 @@ module Type_ = struct
              (Ast_builder.Default.Located.mk ~loc lid)
              []))
     in
-    let type_ = pexp_extension (extension (string "ldiff.type") (ptyp __)) in
+    let type_ = pexp_extension (extension (string "diff.type") (ptyp __)) in
     alt ident type_
   ;;
 
@@ -56,8 +56,14 @@ module Custom = struct
       | As_map -> "map"
     ;;
 
-    let attribute_txt t = Shared.name_of_ppx ^ "." ^ to_string t
-    let to_attribute_string t = "[@" ^ attribute_txt t ^ "]"
+    let attribute_txt t =
+      let name = Shared.name_of_ppx in
+      "ppx_" ^ name ^ "." ^ name ^ "." ^ to_string t
+    ;;
+
+    let to_attribute_string t =
+      "[@" ^ String.filter (attribute_txt t) ~f:(Char.( <> ) '@') ^ "]"
+    ;;
   end
 
   type t =

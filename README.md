@@ -1,13 +1,13 @@
-ppx_ldiff
-=========
+ppx_diff
+========
 
 Generation of diffs and update functions for ocaml types.
 
-`ppx_ldiff` is a ppx rewriter that generates the implementation of [Ldiffable.S].
+`ppx_diff` is a ppx rewriter that generates the implementation of [Diffable.S].
 The [Diff.t] type represents differences between two values. The [Diff.get] and
 [Diff.apply_exn] functions compute and apply the differences.
 
-Users of `ppx_ldiff` should add the [ldiffable] library to the dependencies in
+Users of `ppx_diff` should add the [diffable] library to the dependencies in
 [jbuild].
 
 # Usage
@@ -17,7 +17,7 @@ If you define a type as follows:
 
 <!--BEGIN type_decl-->
 ```ocaml
-type t [@@deriving ldiff]
+type t [@@deriving diff]
 ```
 <!--END-->
 
@@ -31,11 +31,13 @@ module Diff : sig
 
   val get : from : derived_on -> to_ : derived_on -> local_ t Optional_diff.t
   val apply_exn : derived_on -> t -> derived_on
+
+  val of_list_exn : t list -> local_ t Optional_diff.t
 end
 ```
 <!--END-->
 
-Use of `[@@deriving ldiff]` in an .mli will extend the signature with the above module.
+Use of `[@@deriving diff]` in an .mli will extend the signature with the above module.
 In an .ml, definitions will be generated.
 
 ## Serialization and deserialization functions
@@ -43,14 +45,14 @@ In an .ml, definitions will be generated.
 You will likely want your diff type to derive some subset of `bin_io`, `sexp`, `of_sexp`,
 `sexp_of`.
 
-By default `[@@deriving ldiff]` will include the same subset of the above as those
+By default `[@@deriving diff]` will include the same subset of the above as those
 included on your original type.
 
 So e.g. if you define a type as follows:
 
 <!--BEGIN type_decl-->
 ```ocaml
-type t [@@deriving sexp, bin_io, ldiff]
+type t [@@deriving sexp, bin_io, diff]
 ```
 <!--END-->
 
@@ -64,6 +66,8 @@ module Diff : sig
 
   val get : from : derived_on -> to_ : derived_on -> local_ t Optional_diff.t
   val apply_exn : derived_on -> t -> derived_on
+
+  val of_list_exn : t list -> local_ t Optional_diff.t
 end
 ```
 
@@ -74,7 +78,7 @@ For instance, you can write:
 
 <!--BEGIN type_decl-->
 ```ocaml
-type t [@@deriving sexp_of, ldiff ~extra_derive:[of_sexp ; bin_io]]
+type t [@@deriving sexp_of, diff ~extra_derive:[of_sexp ; bin_io]]
 ```
 <!--END-->
 
@@ -91,7 +95,7 @@ module Optional_diff : sig
 
   val is_none : local_ _ t -> bool
   val unsafe_value : local_ 'a t -> 'a
-  val to_option : local_ 'a t -> t option
+  val to_option : local_ 'a t -> 'a option
 end
 ```
 <!--END-->
@@ -99,9 +103,9 @@ end
 It is designed to improve allocations. Specifically, if you have a `local_ 'a t`, that
 means that `'a` was allocated, but the pointer to `'a option` was not.
 
-### Apply_exn
+### Exn functions
 
-Why is the function called `apply_exn` and not `apply`?
+Why are the function called `apply_exn` and `of_list_exn` instead of  `apply` and `of_list`?
 
 Rest assured that calling
 
@@ -113,11 +117,10 @@ will never raise.
 
 
 However, applying a hand-crafted diff might raise for some types (in particular for
-variants when the diff is for an unexpected variant, and for maps if applying diff to an
-non-existing element)
+variants when the diff is for an unexpected variant). Similarly, hand-crafing diffs using `of_list_exn` may raise if trying to combine diffs for different variants.
 
 ## Nesting
-By default, diffs will be "nested". This means if a type deriving `ldiff` references other
+By default, diffs will be "nested". This means if a type deriving `diff` references other
 types, those types must also be diffable.
 
 For example, for the following to work
@@ -128,27 +131,32 @@ type t =
   { x : X.t
   ; y : Y.t
   ; z : Z.t
-  } [@@deriving ldiff]
+  } [@@deriving diff]
 ```
 <!--END-->
 
-`X.t`, `Y.t` and `Z.t` must also either derive `ldiff` or otherwise implement `Ldiffable.S`.
+`X.t`, `Y.t` and `Z.t` must also either derive `diff` or otherwise implement `Diffable.S`.
 
 Some basic types are already supported, in particular `int`, `float`, `string`, `bool`,
 `char`, `unit` and `option`, so it is ok to reference those.
 
 ## Parametric types
 
-`ppx_ldiff` works also with parametric polymorphic types. In this case the
+`ppx_diff` works also with parametric polymorphic types. In this case the
 [Diff.get] and [Diff.apply_exn] functions require diff functions for all the types in order of their
 appearance in the type definition. This is similar to what you may be used to with
 e.g. `t_of_sexp` functions.
+
+The `[Diff.of_list_exn]` function requires `[of_list_exn]` and `[apply_exn]` of all the
+types in order of their appearance. (The `[apply_exn]` is needed for variant types. If you
+combine something like `[Set_to_variant_X of a]` with `[Diff_variant_X of a_diff]`, the
+result should be `[Set_to_variant_X (apply_a_exn a a_diff)]`)
 
 If you define a type as follows:
 
 <!--BEGIN type_decl-->
 ```ocaml
-type ('a, 'b) t [@@deriving ldiff]
+type ('a, 'b) t [@@deriving diff]
 ```
 <!--END-->
 
@@ -174,18 +182,26 @@ module Diff : sig
     -> ('a, 'b) derived_on
     -> ('a, 'b, 'a_diff, 'b_diff) t
     -> ('a, 'b) derived_on
+
+  val of_list_exn
+    :  ('a_diff list -> local_ 'a_diff Optional_diff.t)
+    -> ('a -> 'a_diff -> 'a)
+    -> ('b_diff list -> local_ 'b_diff Optional_diff.t)
+    -> ('b -> 'b_diff -> 'b)
+    -> ('a, 'b, 'a_diff, 'b_diff) t list
+    -> local_ ('a, 'b, 'a_diff, 'b_diff) t Optional_diff.t
 end
 ```
 <!--END-->
 
 ## Types with names other than `t`
-`ppx_ldiff` works also with types named something else than `t`.
+`ppx_diff` works also with types named something else than `t`.
 
 If you define a type as follows
 
 <!--BEGIN type_decl-->
 ```ocaml
-type name [@@deriving ldiff]
+type name [@@deriving diff]
 ```
 <!--END-->
 
@@ -199,6 +215,7 @@ module Diff_of_name : sig
 
   val get : from : derived_on -> to_ : derived_on -> local_ t Optional_diff.t
   val apply_exn : derived_on -> t -> derived_on
+  val of_list_exn : t list -> local_ t Optional_diff.t
 end
 ```
 <!--END-->
@@ -218,7 +235,7 @@ type t =
   { x : X.t
   ; y : Y.t
   ; z : Z.t
-  } [@@deriving ldiff]
+  } [@@deriving diff]
 
 module Diff : sig
 
@@ -237,7 +254,6 @@ module Diff : sig
     -> t
 
   val singleton : Field_diff.t -> t
-  val of_field_diffs_exn : Field_diff.t list -> t
   ...
 end
 ```
@@ -263,10 +279,10 @@ Those two invariants allow for a more performant `apply_exn` function.
 
 ### How to create the diff
 You can still create items of the `Diff.t` type by calling `Diff.singleton`, `Diff.create`,
-`Diff.create_of_variants` or `Diff.of_field_diffs_exn`
+`Diff.create_of_variants` or `Diff.of_list_exn`
 
-Note that `Diff.of_field_diffs_exn` will fail if there are two entries for the same `Field_diff.t` variant, but it
-will be happy to reorder the entries for you to satisfy invariant `2`
+Note that `Diff.of_list_exn` will correctly order the diffs and combine diffs for the same
+field in order to satisfy the invariants.
 
 ### Record with one field
 There is a special case for a record with just one field. We don't return a list, just the
@@ -274,7 +290,7 @@ There is a special case for a record with just one field. We don't return a list
 
 <!--BEGIN generated_sig-->
 ```ocaml
-type t = { x : X.t } [@@deriving ldiff]
+type t = { x : X.t } [@@deriving diff]
 
 module Diff : sig
   type t = | X of X.Diff.t
@@ -290,10 +306,10 @@ Very similar to records
 
 <!--BEGIN generated_sig-->
 ```ocaml
-type t = X.t * Y.t [@@deriving ldiff]
+type t = X.t * Y.t [@@deriving diff]
 
 module Diff : sig
-  type t = (X.t, Y.t, X.Diff.t, Y.Diff.t) Ldiffable.Tuples.Tuple2.Diff.t
+  type t = (X.t, Y.t, X.Diff.t, Y.Diff.t) Diffable.Tuples.Tuple2.Diff.t
   ...
 end
 ```
@@ -332,10 +348,6 @@ module Tuple2 : sig
       :  ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t
       -> ('a1, 'a2, 'a1_diff, 'a2_diff) t
 
-    val of_entry_diffs_exn
-      :  ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t list
-      -> ('a1, 'a2, 'a1_diff, 'a2_diff) t
-
     ...
   end
 end
@@ -343,7 +355,7 @@ end
 <!--END-->
 
 Again the `Entry_diff.t` entries in `Diff.t` must be sorted and unique, and again `create`,
-`create_of_variants`, `singleton` and `of_entry_diffs_exn` functions are provided for convenience.
+`create_of_variants`, `singleton` functions are provided for convenience.
 
 Tuples of size greater than `6` are not supported, but this can be trivially extended as
 the `Tuple` modules are generated using cinaps.
@@ -352,7 +364,7 @@ the `Tuple` modules are generated using cinaps.
 
 <!--BEGIN generated_sig-->
 ```ocaml
-type t = X.t [@@deriving ldiff]
+type t = X.t [@@deriving diff]
 
 module Diff : sig
   type t = X.Diff.t
@@ -365,7 +377,7 @@ including parametrized ones
 
 <!--BEGIN generated_sig-->
 ```ocaml
-type t = Y.t X1.t [@@deriving ldiff]
+type t = Y.t X1.t [@@deriving diff]
 
 module Diff : sig
   type t = (Y.t, Y.Diff.t) X.Diff.t
@@ -378,7 +390,7 @@ end
 
 <!--BEGIN generated_sig-->
 ```ocaml
-type 'a t = 'a [@@deriving ldiff]
+type 'a t = 'a [@@deriving diff]
 
 module Diff : sig
   type ('a, 'a_diff) t = 'a_diff
@@ -394,7 +406,7 @@ end
 type t =
   | A
   | B of B.t
-[@@deriving ldiff]
+[@@deriving diff]
 
 module Diff : sig
   type t = | Set_to_a | Set_to_b of B.t | Diff_b of B.Diff.t
@@ -414,7 +426,7 @@ Their diff types look exactly like those for regular tuples / records.
 type t =
   | C of C1.t * C2.t
   | D of { d1 : D1.t ; d2 : D2.t}
-[@@deriving ldiff]
+[@@deriving diff]
 
 module Diff : sig
 
@@ -442,6 +454,8 @@ module Diff : sig
 
       val apply_exn : local_ derived_on -> t -> local_ derived_on
 
+      val of_list_exn : t list -> local_ t Optional_diff.t
+
       val create : ?d1:D1.Diff.t -> ?d2:D2.Diff.t -> unit -> t
 
       val create_of_variants
@@ -449,8 +463,7 @@ module Diff : sig
         -> d2:local_ (D2.Diff.t, Field_diff.t) Of_variant.t
         -> t
 
-      val of_single : Field_diff.t -> t
-      val of_field_diffs_exn : Field_diff.t list -> t
+      val singleton : Field_diff.t -> t
   end
 
   type t =
@@ -459,7 +472,7 @@ module Diff : sig
         { d1 : D1.t
         ; d2 : D2.t
         }
-    | Diff_c of Ldiffable.Tuples.Tuple2.For_inlined_tuple.Diff.t
+    | Diff_c of Diffable.Tuples.Tuple2.For_inlined_tuple.Diff.t
     | Diff_d of D_record.Diff.t
 
   ...
@@ -469,26 +482,26 @@ end
 where
 
 ```ocaml
-type Ldiffable.Tuples.Tuple2.For_inlined_tuple.Diff.t = Ldiffable.Tuples.Tuple2.Diff.t
+type Diffable.Tuples.Tuple2.For_inlined_tuple.Diff.t = Diffable.Tuples.Tuple2.Diff.t
 ```
 
 Notice that for inlined records the ppx generates a helper module which looks the same as a regular record
-module with `[@@deriving ldiff]`, but can be calculated from / applied to `local_` values
+module with `[@@deriving diff]`, but can be calculated from / applied to `local_` values
 of `derived_on`.
 
-Similar helper modules exist for tuples in `Ldiffable.Tuples.TupleN.For_inlined_tuple`
+Similar helper modules exist for tuples in `Diffable.Tuples.TupleN.For_inlined_tuple`
 
 
 # Referencing other types
 
-Since diffs are by default nested, any type you reference must also derive `ldiff` or
-otherwise implement `Ldiffable.S`
+Since diffs are by default nested, any type you reference must also derive `diff` or
+otherwise implement `Diffable.S`
 
-For example, if `Time_ns.Ofday.t` doesn't implement `Ldiffable.S`, then the following:
+For example, if `Time_ns.Ofday.t` doesn't implement `Diffable.S`, then the following:
 
 ```ocaml
 type t = Time_ns.Ofday.t * Time_ns.Ofday.t
-[@@deriving ldiff]
+[@@deriving diff]
 ```
 
 Will give you an error like:
@@ -497,7 +510,7 @@ Will give you an error like:
 Error: Unbound module Time_ns.Ofday.Diff
 ```
 
-Often it's enough to just add `[@@deriving ldiff]` to the referenced type.
+Often it's enough to just add `[@@deriving diff]` to the referenced type.
 
 But occasionally that doesn't quite work. This section covers some special cases and how
 to handle them.
@@ -511,54 +524,54 @@ aren't equal. We call such diffs `atomic`.
 
 This section explains how you can mark your types as atomically diffable
 
-### [@ldiff.atomic]
+### [@diff.atomic]
 
-You can annotate any part of your type to use atomic diffs using the `[@ldiff.atomic]`
+You can annotate any part of your type to use atomic diffs using the `[@diff.atomic]`
 attribute.
 
 For instance, the error from the example above will go away if you write
 
 ```ocaml
 type t =
-  (Time_ns.Ofday.t [@ldiff.atomic]) * (Time_ns.Ofday.t [@ldiff.atomic])
-[@@deriving ldiff]
+  (Time_ns.Ofday.t [@diff.atomic]) * (Time_ns.Ofday.t [@diff.atomic])
+[@@deriving diff]
 ```
 
 The annotation also works for record fields:
 
 ```ocaml
 type t =
-  { start : Time_ns.Ofday.t [@ldiff.atomic]
-  ; stop : Time_ns.Ofday.t [@ldiff.atomic]
+  { start : Time_ns.Ofday.t [@diff.atomic]
+  ; stop : Time_ns.Ofday.t [@diff.atomic]
   }
-[@@deriving ldiff]
+[@@deriving diff]
 ```
 
 and for variants:
 
 ```ocaml
 type t =
-  | Start of Time_ns.Ofday.t [@ldiff.atomic]
-  | Stop of Time_ns.Ofday.t [@ldiff.atomic]
-[@@deriving ldiff]
+  | Start of Time_ns.Ofday.t [@diff.atomic]
+  | Stop of Time_ns.Ofday.t [@diff.atomic]
+[@@deriving diff]
 ```
 
 The two examples above are in fact equivalent to
 
 ```ocaml
 type t =
-  { start : (Time_ns.Ofday.t [@ldiff.atomic])
-  ; stop : (Time_ns.Ofday.t [@ldiff.atomic])
+  { start : (Time_ns.Ofday.t [@diff.atomic])
+  ; stop : (Time_ns.Ofday.t [@diff.atomic])
   }
-  [@@deriving ldiff]
+  [@@deriving diff]
 ```
 and
 
 ```ocaml
 type t =
-  | Start of (Time_ns.Ofday.t [@ldiff.atomic])
-  | Stop of (Time_ns.Ofday.t [@ldiff.atomic])
-  [@@deriving ldiff]
+  | Start of (Time_ns.Ofday.t [@diff.atomic])
+  | Stop of (Time_ns.Ofday.t [@diff.atomic])
+  [@@deriving diff]
 ```
 
 but slightly nicer to write.
@@ -568,7 +581,7 @@ but slightly nicer to write.
 Finally, you can mark your whole type atomic by using the `how` parameter:
 
 ```ocaml
-type t = Time_ns.Ofday.t [@@deriving equal, ldiff ~how:"atomic"]
+type t = Time_ns.Ofday.t [@@deriving equal, diff ~how:"atomic"]
 ```
 
 Any type that you mark `atomic`, must also derive / otherwise implement `equal`.
@@ -576,23 +589,23 @@ Any type that you mark `atomic`, must also derive / otherwise implement `equal`.
 
 ### Atomic types
 To avoid having to add the annotations everywhere, you can also make the referenced type
-implement `Ldiffable.S` in an atomic fashion.
+implement `Diffable.S` in an atomic fashion.
 
-To do this, use `Ldiffable.Make_atomic`, e.g.
+To do this, use `Diffable.Make_atomic`, e.g.
 
 ```ocaml
 module Id : sig
   include Identifiable
-  include Ldiffable.S with type t := t and type Diff.t = t
+  include Diffable.S with type t := t and type Diff.t = t
 end = struct
   include String
-  include functor Ldiffable.Atomic.Make
+  include functor Diffable.Atomic.Make
 end
 ```
 
-Note that `Ldiffable.Atomic.Make` requires that your type derives `equal`, `sexp` and `bin_io`.
+Note that `Diffable.Atomic.Make` requires that your type derives `equal`, `sexp` and `bin_io`.
 
-If you don't derive all of those (but do derive, say, `sexp_of`), `Ldiffable.Atomic` will
+If you don't derive all of those (but do derive, say, `sexp_of`), `Diffable.Atomic` will
 still work but you will need to be more verbose, e.g.
 
 ```ocaml
@@ -603,7 +616,7 @@ module Id : sig
     type derived_on = t [@@deriving sexp_of]
     type t = derived_on [@@deriving sexp_of]
 
-    include Ldiffable.Diff.S_plain with type t := t and type derived_on := derived_on
+    include Diffable.Diff.S_plain with type t := t and type derived_on := derived_on
   end
 end = struct
   type t = some_type [@@deriving equal, sexp_of]
@@ -612,7 +625,7 @@ end = struct
     type derived_on = t [@@deriving equal, sexp_of]
     type t = derived_on [@@deriving equal, sexp_of]
 
-    include functor Ldiffable.Atomic.Make_diff_plain
+    include functor Diffable.Atomic.Make_diff_plain
   end
 end
 ```
@@ -625,15 +638,15 @@ If a type doesn't implement `equal`, but does implement `compare`, you can also 
 E.g. the following will work:
 
 ```ocaml
-type t = Time_ns.Ofday.t [@@deriving compare, ldiff ~how:"atomic_using_compare"]
+type t = Time_ns.Ofday.t [@@deriving compare, diff ~how:"atomic_using_compare"]
 ```
 
 ```ocaml
 type t =
-  { start : Time_ns.Ofday.t [@ldiff.atomic_using_compare]
-  ; stop : Time_ns.Ofday.t [@ldiff.atomic_using_compare]
+  { start : Time_ns.Ofday.t [@diff.atomic_using_compare]
+  ; stop : Time_ns.Ofday.t [@diff.atomic_using_compare]
   }
-[@@deriving ldiff]
+[@@deriving diff]
 ```
 
 `atomic_using_compare` does not work in mlis/signatures, just continue using `atomic`
@@ -656,7 +669,7 @@ lot of NANs in your values, you need to make sure you use `compare` and not `equ
 In practice this means you'll want to:
 
 1. Use `atomic_using_compare` and not `atomic`
-2. If using `Ldiffable.Atomic.Make` add an override `let equal = [%compare.equal]`
+2. If using `Diffable.Atomic.Make` add an override `let equal = [%compare.equal]`
 
 The primitive `float` type is already handled using `compare`
 
@@ -666,7 +679,7 @@ The primitive `float` type is already handled using `compare`
 Since diffs are nested, the following:
 
 ```ocaml
-type t = My_id.Set.t [@@deriving ldiff]
+type t = My_id.Set.t [@@deriving diff]
 ```
 
 may give you an error like
@@ -678,7 +691,7 @@ Error: Unbound module My_id.Set.Diff
 and the following:
 
 ```ocaml
-type t = My_data.t My_id.Map.t [@@deriving ldiff]
+type t = My_data.t My_id.Map.t [@@deriving diff]
 ```
 
 may give you an error like
@@ -695,7 +708,7 @@ Of course you could annotate the type with `atomic`, but you can also do better.
 The `set` and `map` annotations will cause the diff to only contain "what changed", i.e.
 
 ```ocaml
-type t = My_id.Set.t [@@deriving ldiff ~how:"set"]
+type t = My_id.Set.t [@@deriving diff ~how:"set"]
 ```
 
 will generate
@@ -703,7 +716,7 @@ will generate
 ```ocaml
 module Diff : sig
   type derived_on = t
-  type t = My_id.Set.Elt.t Ldiffable.Set_diff.t
+  type t = My_id.Set.Elt.t Diffable.Set_diff.t
   ...
 end
 ```
@@ -711,7 +724,7 @@ end
 where
 
 ```ocaml
-module Ldiffable.Set_diff : sig
+module Diffable.Set_diff : sig
   module Change : sig
     type 'a t = | Add of 'a | Remove of 'a
   end
@@ -723,7 +736,7 @@ end
 and
 
 ```ocaml
-type t = My_data.t My_id.Map.t [@@deriving ldiff ~how:"map"]
+type t = My_data.t My_id.Map.t [@@deriving diff ~how:"map"]
 ```
 
 will generate
@@ -731,7 +744,7 @@ will generate
 ```ocaml
 module Diff : sig
   type derived_on = t
-  type t = (My_id.Map.Key.t, My_data.t, My_data.Diff.t) Ldiffable.Map_diff.t
+  type t = (My_id.Map.Key.t, My_data.t, My_data.Diff.t) Diffable.Map_diff.t
   ...
 end
 ```
@@ -739,7 +752,7 @@ end
 where
 
 ```ocaml
-module Ldiffable.Map_diff : sig
+module Diffable.Map_diff : sig
   module Change : sig
     type ('key, 'a, 'a_diff) t =
       | Remove of 'key
@@ -761,56 +774,56 @@ overridden. The overrides are particularly helpful for applicative functors.
 E.g. for maps you can write
 
 ```ocaml
-type t = float Map.Stable.V1.M(Int).t [@@deriving ldiff ~how:"map" ~key:int]
+type t = float Map.Stable.V1.M(Int).t [@@deriving diff ~how:"map" ~key:int]
 ```
 
 and for sets you can write
 
 ```ocaml
-type t = Set.Stable.V1.M(Int).t [@@deriving ldiff ~how:"map" ~elt:int]
+type t = Set.Stable.V1.M(Int).t [@@deriving diff ~how:"map" ~elt:int]
 ```
 
-### [@ldiff.set] and [@ldiff.map]
+### [@diff.set] and [@diff.map]
 
 The annotations work as attributes as well, in the same way that the `atomic` ones do.
 This means all of the following will work:
 
 ```ocaml
-type t = (My_id.Set.t [@ldiff.set]) * int [@@deriving ldiff]
+type t = (My_id.Set.t [@diff.set]) * int [@@deriving diff]
 ```
 
 ```ocaml
-type t = (My_data.t My_id.Map.t [@ldiff.map]) * int [@@deriving ldiff]
+type t = (My_data.t My_id.Map.t [@diff.map]) * int [@@deriving diff]
 ```
 
 ```ocaml
 type t =
-  { foo : My_id.Set.t [@ldiff.set]
+  { foo : My_id.Set.t [@diff.set]
   ; bar : int
   }
-[@@deriving ldiff]
+[@@deriving diff]
 ```
 
 ```ocaml
 type t =
-  { foo : My_data.t My_id.Map.t [@ldiff.map]
+  { foo : My_data.t My_id.Map.t [@diff.map]
   ; bar : int
   }
-[@@deriving ldiff]
+[@@deriving diff]
 ```
 
 ```ocaml
 type t =
-  | Foo of My_id.Set.t [@ldiff.set]
+  | Foo of My_id.Set.t [@diff.set]
   | Bar
-[@@deriving ldiff]
+[@@deriving diff]
 ```
 
 ```ocaml
 type t =
-  | Foo of My_data.t My_id.Map.t [@ldiff.map]
+  | Foo of My_data.t My_id.Map.t [@diff.map]
   | Bar
-[@@deriving ldiff]
+[@@deriving diff]
 ```
 
 
@@ -818,12 +831,12 @@ You can also override the key/elt using the attributes.
 
 For maps you can write:
 ```ocaml
-type t = (float Map.Stable.V1.M(Int).t [@ldiff.map (key : int)]) * int [@@deriving ldiff]
+type t = (float Map.Stable.V1.M(Int).t [@diff.map (key : int)]) * int [@@deriving diff]
 ```
 
 and for sets you can write:
 ```ocaml
-type t = (Set.Stable.V1.M(Int).t [@@ldiff.set (elt : int)]) * int [@@deriving ldiff]
+type t = (Set.Stable.V1.M(Int).t [@@diff.set (elt : int)]) * int [@@deriving diff]
 ```
 
 ### Map value diffs
@@ -833,7 +846,7 @@ By default the values in a map are also diffed.
 So if the following:
 
 ```ocaml
-type t = Time_ns.Ofday.t My_id.Map.t [ldiff.map]
+type t = Time_ns.Ofday.t My_id.Map.t [diff.map]
 ```
 
 gives you an error
@@ -846,10 +859,10 @@ you can fix it by writing
 
 
 ```ocaml
-type t = (Time_ns.Ofday.t [@ldiff.atomic]) My_id.Map.t [ldiff.map]
+type t = (Time_ns.Ofday.t [@diff.atomic]) My_id.Map.t [diff.map]
 ```
 
-### Ldiffable.Comparable.Make
+### Diffable.Comparable.Make
 
 To avoid having to annotate the type with `set` and `map` everywhere, you can also add the following to `My_id`
 
@@ -858,12 +871,12 @@ module My_id : sig
   include Core.Identifiable
 
   include
-    Ldiffable.Comparable.S
+    Diffable.Comparable.S
     with type t := t
      and type comparator_witness := comparator_witness
 end = struct
   include Core.String
-  include functor Ldiffable.Comparable.Make
+  include functor Diffable.Comparable.Make
 end
 ```
 
@@ -909,16 +922,16 @@ E.g. the following is rather verbose
 ```ocaml
 module Range : sig
   type t =
-    { start : Time_ns.Ofday.t [@ldiff.atomic]
-    ; stop : Time_ns.Ofday.t [@ldiff.atomic]
+    { start : Time_ns.Ofday.t [@diff.atomic]
+    ; stop : Time_ns.Ofday.t [@diff.atomic]
     }
-  [@@deriving ldiff]
+  [@@deriving diff]
 end = struct
   type t =
-    { start : Time_ns.Ofday.t [@ldiff.atomic]
-    ; stop : Time_ns.Ofday.t [@ldiff.atomic]
+    { start : Time_ns.Ofday.t [@diff.atomic]
+    ; stop : Time_ns.Ofday.t [@diff.atomic]
     }
-  [@@deriving ldiff]
+  [@@deriving diff]
 end
 ```
 
@@ -934,7 +947,7 @@ module Range : sig
     ; stop : Time_ns.Ofday.t
     }
 
-  include Ldiffable.S with type t := t
+  include Diffable.S with type t := t
 end
 ```
 
@@ -946,32 +959,32 @@ module Range : sig
     { start : Time_ns.Ofday.t
     ; stop : Time_ns.Ofday.t
     }
-  [@@deriving ldiff ~how:"abstract"]
+  [@@deriving diff ~how:"abstract"]
 end
 ```
 
 # Stability
 
-Want to use `[@@deriving ldiff]` with stable types and guarantee that `[Diff.t]` is also stable?
+Want to use `[@@deriving diff]` with stable types and guarantee that `[Diff.t]` is also stable?
 You can use the `[stable_version]` annotation, e.g.
 
 ```ocaml
-type t = ... [@@deriving ldiff ~stable_version:1]
+type t = ... [@@deriving diff ~stable_version:1]
 ```
 
 The resulting diff type won't change as long as it only references other types that are
-both stable themselves and use the ldiff `[stable_version]` annotation (or atomic diffs).
+both stable themselves and use the diff `[stable_version]` annotation (or atomic diffs).
 Note that the compiler does NOT check that you got this right, so we suggest adding a bin
 digest test for peace of mind.
 
 Only version `1` exists at the moment. There are also currently no plans to change any the
-types generated by ldiff, but the `stable_version` annotation will protect you in case we
+types generated by diff, but the `stable_version` annotation will protect you in case we
 ever do choose to make changes.
 
 
 # Polling state RPC
 
-`ppx_ldiff` can be used with `Polling_state_rpc` by calling `Ldiffable_polling_state_rpc_response.Polling_state_rpc_response.Make`
+`ppx_diff` can be used with `Polling_state_rpc` by calling `Diffable_polling_state_rpc_response.Polling_state_rpc_response.Make`
 
 For example, the following will work:
 
@@ -983,7 +996,7 @@ module Response = struct
     { foo : int
     ; bar : float
     ; baz : char
-    } [@@deriving sexp, bin_io, ldiff]
+    } [@@deriving sexp, bin_io, diff]
 end
 
 let polling_state_rpc =
@@ -992,6 +1005,6 @@ let polling_state_rpc =
       ~version:0
       ~query_equal:Query.equal
       ~bin_query:Query.bin_t
-      (module Ldiffable_polling_state_rpc_response.Polling_state_rpc_response.Make
+      (module Diffable_polling_state_rpc_response.Polling_state_rpc_response.Make
            (Response))
 ```

@@ -4,6 +4,7 @@ module type S_plain = sig
 
   val get : from:derived_on -> to_:derived_on -> t Optional_diff.t
   val apply_exn : derived_on -> t -> derived_on
+  val of_list_exn : t list -> t Optional_diff.t
 end
 
 module type S = sig
@@ -28,6 +29,13 @@ module type S1_plain = sig
     -> 'a derived_on
     -> ('a, 'a_diff) t
     -> 'a derived_on
+
+  (* None if and only if the input list is empty *)
+  val of_list_exn
+    :  ('a_diff list -> 'a_diff Optional_diff.t)
+    -> ('a -> 'a_diff -> 'a)
+    -> ('a, 'a_diff) t list
+    -> ('a, 'a_diff) t Optional_diff.t
 end
 
 module type S1 = sig
@@ -57,6 +65,14 @@ module type S2_plain = sig
     -> ('a, 'b) derived_on
     -> ('a, 'b, 'a_diff, 'b_diff) t
     -> ('a, 'b) derived_on
+
+  val of_list_exn
+    :  ('a_diff list -> 'a_diff Optional_diff.t)
+    -> ('a -> 'a_diff -> 'a)
+    -> ('b_diff list -> 'b_diff Optional_diff.t)
+    -> ('b -> 'b_diff -> 'b)
+    -> ('a, 'b, 'a_diff, 'b_diff) t list
+    -> ('a, 'b, 'a_diff, 'b_diff) t Optional_diff.t
 end
 
 module type S2 = sig

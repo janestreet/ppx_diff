@@ -7,10 +7,11 @@ module Stable : sig
         | Remove of 'k
         | Add of 'k * 'v
         | Diff of 'k * 'v_diff
-      [@@deriving sexp, bin_io]
+      [@@deriving sexp, bin_io, stable_witness]
     end
 
-    type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list [@@deriving sexp, bin_io]
+    type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list
+    [@@deriving sexp, bin_io, stable_witness]
 
     val get
       :  (from:'v -> to_:'v -> 'v_diff Optional_diff.t)
@@ -23,6 +24,12 @@ module Stable : sig
       -> ('k, 'v, 'cmp) Map.t
       -> ('k, 'v, 'v_diff) t
       -> ('k, 'v, 'cmp) Map.t
+
+    val of_list_exn
+      :  ('v_diff list -> 'v_diff Optional_diff.t)
+      -> ('v -> 'v_diff -> 'v)
+      -> ('k, 'v, 'v_diff) t list
+      -> ('k, 'v, 'v_diff) t Optional_diff.t
 
     module Make (M : sig
       module Key : sig

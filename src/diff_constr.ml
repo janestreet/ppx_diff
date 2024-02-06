@@ -66,5 +66,11 @@ let create
       (fn_name Function_name.apply_exn)
       (List.map param_diffs ~f:(fun diff -> Nolabel, diff.functions.apply_exn))
   in
-  { Core_diff.diff_type; functions = { get; apply_exn } }
+  let of_list_exn =
+    pexp_apply
+      (fn_name Function_name.of_list_exn)
+      (List.concat_map param_diffs ~f:(fun diff ->
+         [ Nolabel, diff.functions.of_list_exn; Nolabel, diff.functions.apply_exn ]))
+  in
+  { Core_diff.diff_type; functions = { get; apply_exn; of_list_exn } }
 ;;

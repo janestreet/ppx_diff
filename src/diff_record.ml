@@ -241,6 +241,87 @@ let apply ~field_diffs ~local_apply ~builder =
                        | _ :: _ -> failwith "BUG: non-empty diff after apply"])]]
 ;;
 
+let of_list ~field_diffs ~builder =
+  let open (val builder : Builder.S) in
+  let of_list_fn ~field_name = with_prefix ~field_name (Some Prefix.of_list_exn) in
+  let expr =
+    match field_diffs with
+    | Field_diffs.Single { field_name; field_diff = _ } ->
+      [%expr
+        fun ts ->
+          match
+            Base.List.map ts ~f:(function [%p variant_row ~field_name "x" |> p] -> x)
+          with
+          | [] -> Optional_diff.none
+          | l ->
+            Optional_diff.map
+              ([%e of_list_fn ~field_name |> e] l)
+              ~f:(fun d -> [%e variant_row ~field_name "d" |> e])]
+    | Multi field_diffs ->
+      let match_case { Field_diff.field_name; field_diff = _ } =
+        (* {[ | X d :: tl ->
+             (* Collect all Xs from the from of the list *)
+             let ds, tl = List.split_while ts ~f:(function
+               | X _x -> true
+               | _ -> false)
+             in
+             let ds = List.map ts ~f:(function
+               | X x -> x
+               | _ -> assert false)
+             in
+             let d = of_listx_exn (d :: ds) |> Optional_diff.unsafe_value in
+             loop ((X d) :: acc) tl
+           ]}
+        *)
+        case
+          ~lhs:[%pat? [%p variant_row ~field_name "d" |> p] :: tl]
+          ~guard:None
+          ~rhs:
+            [%expr
+              let ds, tl =
+                Base.List.split_while tl ~f:(function
+                  | [%p variant_row ~field_name "_x" |> p] -> true
+                  | _ -> false)
+              in
+              let ds =
+                Base.List.map ds ~f:(function
+                  | [%p variant_row ~field_name "x" |> p] -> x
+                  | _ -> assert false)
+              in
+              match%optional.Optional_diff [%e of_list_fn ~field_name |> e] (d :: ds) with
+              | None -> loop acc tl
+              | Some d -> loop ([%e variant_row ~field_name "d" |> e] :: acc) tl]
+      in
+      [%expr
+        function
+        | [] -> Optional_diff.none
+        | _ :: _ as ts ->
+          (match Base.List.concat ts |> Base.List.stable_sort ~compare:compare_rank with
+           | [] -> Optional_diff.return []
+           | _ :: _ as diff ->
+             let diff =
+               let rec loop acc l =
+                 [%e
+                   pexp_match
+                     [%expr l]
+                     (* | [] -> List.rev acc *)
+                     (case ~lhs:[%pat? []] ~guard:None ~rhs:[%expr Base.List.rev acc]
+                      :: List.map field_diffs ~f:match_case)]
+               in
+               loop [] diff
+             in
+             Optional_diff.return diff)]
+  in
+  List.fold
+    (Field_diffs.to_list field_diffs)
+    ~f:(fun expr { field_name; field_diff } ->
+      (* Pre-allocate the [of_list] functions *)
+      [%expr
+        let [%p of_list_fn ~field_name |> p] = [%e field_diff.functions.of_list_exn] in
+        [%e expr]])
+    ~init:expr
+;;
+
 let create ~field_diffs ~local_apply ~builder =
   let field_diffs =
     match field_diffs with
@@ -249,9 +330,10 @@ let create ~field_diffs ~local_apply ~builder =
   in
   let get = get ~field_diffs ~builder in
   let apply_exn = apply ~field_diffs ~local_apply ~builder in
+  let of_list_exn = of_list ~field_diffs ~builder in
   { Diff.prefix = Items.empty
   ; diff_type = diff_type_kind ~field_diffs
-  ; functions = Ok { get; apply_exn }
+  ; functions = Ok { get; apply_exn; of_list_exn }
   }
 ;;
 

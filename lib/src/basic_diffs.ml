@@ -1,8 +1,24 @@
 open Core
-module Diff_of_bool = Atomic.Make_diff (Bool)
-module Diff_of_char = Atomic.Make_diff (Char)
 
-module Diff_of_float = Atomic.Make_diff (struct
+module type S_with_quickcheck = sig
+  type t [@@deriving quickcheck]
+
+  include Diff_intf.S with type t := t
+end
+
+module Make_atomic_with_quickcheck (M : sig
+  type t [@@deriving sexp, bin_io, equal, quickcheck]
+end) =
+struct
+  include Atomic.Make_diff (M)
+
+  type t = M.t [@@deriving quickcheck]
+end
+
+module Diff_of_bool = Make_atomic_with_quickcheck (Bool)
+module Diff_of_char = Make_atomic_with_quickcheck (Char)
+
+module Diff_of_float = Make_atomic_with_quickcheck (struct
   include Float
 
   (* Overriding [equal], because
@@ -13,9 +29,9 @@ module Diff_of_float = Atomic.Make_diff (struct
   let equal = [%compare.equal: t]
 end)
 
-module Diff_of_int = Atomic.Make_diff (Int)
-module Diff_of_string = Atomic.Make_diff (String)
-module Diff_of_unit = Atomic.Make_diff (Unit)
+module Diff_of_int = Make_atomic_with_quickcheck (Int)
+module Diff_of_string = Make_atomic_with_quickcheck (String)
+module Diff_of_unit = Make_atomic_with_quickcheck (Unit)
 
 module Diff_of_option = struct
   type 'a derived_on = 'a option [@@deriving sexp, bin_io]
@@ -24,7 +40,7 @@ module Diff_of_option = struct
     | Set_to_none
     | Set_to_some of 'a
     | Diff_some of 'a_diff
-  [@@deriving sexp, bin_io]
+  [@@deriving sexp, bin_io, quickcheck]
 
   let get get_a ~from ~to_ =
     if phys_equal from to_
@@ -47,5 +63,37 @@ module Diff_of_option = struct
       raise_s
         [%message
           "Could not apply diff. Variant mismatch." ~derived_on:"None" ~diff:"Diff_some"]
+  ;;
+
+  let of_list_exn of_list_exn_a apply_a_exn diffs =
+    match diffs with
+    | [] -> Optional_diff.none
+    | [ hd ] -> Optional_diff.return hd
+    | l ->
+      let trailing_diffs_rev, rest_rev =
+        List.rev l
+        |> List.split_while ~f:(function
+             | Diff_some _ -> true
+             | Set_to_some _ | Set_to_none -> false)
+      in
+      let a_diffs =
+        List.rev_map trailing_diffs_rev ~f:(function
+          | Diff_some a_diff -> a_diff
+          | Set_to_none | Set_to_some _ -> assert false)
+      in
+      (match rest_rev, a_diffs with
+       | [], [] | Diff_some _ :: _, _ -> assert false
+       | ((Set_to_none | Set_to_some _) as t) :: _, [] -> Optional_diff.return t
+       | [], a_diffs ->
+         let%map.Optional_diff a_diff = of_list_exn_a a_diffs in
+         Diff_some a_diff
+       | Set_to_some a :: _, a_diffs ->
+         Optional_diff.return (Set_to_some (List.fold a_diffs ~init:a ~f:apply_a_exn))
+       | Set_to_none :: _, _ :: _ ->
+         raise_s
+           [%message
+             "Could not combine diffs. Variant mismatch."
+               ~first_diff:"Set_to_none"
+               ~second_diff:"Diff_some"])
   ;;
 end

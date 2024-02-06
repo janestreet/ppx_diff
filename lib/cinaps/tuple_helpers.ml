@@ -44,11 +44,11 @@ let diff_type_declarations ~size ~signature =
       module %{entry_diff_module_name} %{if signature then ": sig" else "= struct"}
         type %{diff_type ~size} =
           %{variants ~size}
-        [@@deriving variants, sexp, bin_io]
+        [@@deriving variants, sexp, bin_io, quickcheck]
       end
       %{maybe_open_entry_diff}
 
-      type %{diff_type ~size} =%{maybe_private} %{entry_diff_type ~size} list [@@deriving sexp, bin_io]
+      type %{diff_type ~size} =%{maybe_private} %{entry_diff_type ~size} list [@@deriving sexp, bin_io, quickcheck]
 
 |}]
 ;;
@@ -63,7 +63,7 @@ let for_inlined_tuple_diff_type_declarations ~size =
     {|
       type %{derived_on_type ~size} = %{t_type ~size}
 
-      type %{diff_type ~size} = %{diff_type_reference ~size} [@@deriving sexp, bin_io]
+      type %{diff_type ~size} = %{diff_type_reference ~size} [@@deriving sexp, bin_io, quickcheck]
   |}]
 ;;
 
@@ -77,8 +77,17 @@ let tuple_mli size =
         {|(from: %{var i} -> to_: %{var i} -> local_ %{diff_var i} Optional_diff.t)|}])
     |> String.concat ~sep:"\n -> "
   in
-  let apply_functions =
+  let apply_functions' =
     List.map nums ~f:(fun i -> [%string {|(%{var i} -> %{diff_var i} -> %{var i})|}])
+  in
+  let apply_functions = apply_functions' |> String.concat ~sep:"\n -> " in
+  let of_list_functions' =
+    List.map nums ~f:(fun i ->
+      [%string {|(%{diff_var i} list -> local_ %{diff_var i} Optional_diff.t)|}])
+  in
+  let of_list_and_apply_functions =
+    List.zip_exn of_list_functions' apply_functions'
+    |> List.concat_map ~f:(fun (x, y) -> [ x; y ])
     |> String.concat ~sep:"\n -> "
   in
   let function_declarations ~local =
@@ -90,6 +99,8 @@ let tuple_mli size =
         val get : %{get_functions} -> from: %{derived_on_type} -> to_: %{derived_on_type} -> local_ %{diff_type} Optional_diff.t
 
         val apply_exn : %{apply_functions} -> %{derived_on_type} -> %{diff_type} -> %{derived_on_type}
+
+        val of_list_exn : %{of_list_and_apply_functions} -> %{diff_type} list -> local_ %{diff_type} Optional_diff.t
          |}]
   in
   let create_args ~optional =
@@ -115,7 +126,6 @@ let tuple_mli size =
         %{function_declarations ~local:false}
 
         val singleton : %{entry_diff_type ~size} -> %{diff_type}
-        val of_entry_diffs_exn : %{entry_diff_type ~size} list -> %{diff_type}
 
         val create : %{create_args ~optional:true} -> unit -> %{diff_type}
 
@@ -138,6 +148,7 @@ let tuple_ml size =
   let nums = nums ~size in
   let get = sprintf "get%i" in
   let apply = sprintf "apply%i_exn" in
+  let of_list = sprintf "of_list%i_exn" in
   let maybe_gel s i ~gel =
     let base = sprintf "%s%i" s i in
     if not gel then base else sprintf "{Gel.g = %s}" base
@@ -158,12 +169,9 @@ let tuple_ml size =
   let get_diff n =
     [%string
       {| let diff =
-            let d = %{get n} ~from:%{from n ~gel:false} ~to_:%{to_ n ~gel:false} in
-            if Optional_diff.is_none d
-            then diff
-            else (
-              let d = Optional_diff.unsafe_value d in
-              %{variant_name n} d :: diff)
+            match%optional.Optional_diff %{get n} ~from:%{from n ~gel:false} ~to_:%{to_ n ~gel:false} with
+            | None -> diff
+            | Some d -> %{variant_name n} d :: diff
           in
        |}]
   in
@@ -189,10 +197,9 @@ let tuple_ml size =
            |}]
         | `optional_diff ->
           [%string
-            {| let d = %{value i} in
-               if Optional_diff.is_none d
-               then diff
-               else %{variant_name i} (Optional_diff.unsafe_value d) :: diff
+            {| match%optional.Optional_diff %{value i} with
+               | None -> diff
+               | Some d -> %{variant_name i} d :: diff
             |}]
       in
       [%string {|let diff =
@@ -204,6 +211,23 @@ let tuple_ml size =
       {|let diff = [] in
       %{List.rev_map nums ~f:maybe_add_diff |> String.concat ~sep:"\n"}
       diff|}]
+  in
+  let diff_of_list i =
+    [%string
+      {|
+      | %{variant_name i} d :: tl ->
+        let ds, tl = List.split_while tl ~f:(function
+          | %{variant_name i} _ -> true
+          | _ -> false)
+        in
+        let ds = List.map ds ~f:(function
+          | %{variant_name i} x -> x
+          | _ -> assert false)
+        in
+        (match%optional.Optional_diff %{of_list i} (d :: ds) with
+         | None -> loop acc tl
+         | Some d -> loop (%{variant_name i} d :: acc) tl)
+         |}]
   in
   let function_implementations ~local =
     let maybe_local = if local then "local_ " else "" in
@@ -231,6 +255,27 @@ let tuple_ml size =
           | _ :: _ -> %{maybe_local}failwith "BUG: non-empty diff after apply"
         |}]
   in
+  let of_list_and_apply_functions =
+    List.concat_map nums ~f:(fun x -> [ of_list x; sprintf "_%s" (apply x) ])
+    |> String.concat ~sep:" "
+  in
+  let of_list_function =
+    [%string
+      {|
+      let of_list_exn %{of_list_and_apply_functions} ts =
+        match ts with
+        | [] -> local_ Optional_diff.none
+        | _ :: _ ->
+          match List.concat ts |> List.stable_sort ~compare:compare_rank with
+          | [] -> local_ Optional_diff.return []
+          | _ :: _ as diff ->
+            let rec loop acc = function
+              | [] -> List.rev acc
+               %{List.map nums ~f:diff_of_list |> String.concat ~sep:"\n"}
+            in
+            local_ Optional_diff.return (loop [] diff)
+         |}]
+  in
   let create_arg_of_variant i =
     [%string {|(%{create_arg i} %{entry_diff_module_name}.Variants.%{create_arg i})|}]
   in
@@ -241,8 +286,6 @@ let tuple_ml size =
       module %{diff_module_name} = struct
         %{diff_type_declarations ~size ~signature:false}
 
-        %{function_implementations ~local:false}
-
         let compare_rank t1 t2 =
           Int.compare (%{entry_diff_module_name}.Variants.to_rank t1) (%{entry_diff_module_name}.Variants.to_rank t2)
         ;;
@@ -251,17 +294,18 @@ let tuple_ml size =
           Int.equal (%{entry_diff_module_name}.Variants.to_rank t1) (%{entry_diff_module_name}.Variants.to_rank t2)
         ;;
 
+        %{function_implementations ~local:false}
+
+        %{of_list_function}
+
         let singleton entry_diff = [entry_diff]
 
-        let of_entry_diffs_exn l =
-          let l = List.sort l ~compare:compare_rank in
+        let t_of_sexp %{of_sexp_functions} sexp =
+          let l = t_of_sexp %{of_sexp_functions} sexp |> List.sort ~compare:compare_rank in
           match List.find_consecutive_duplicate l ~equal:equal_rank with
           | None -> l
           | Some (dup, _) ->
-            failwith ("Duplicate entry in tuple diff: " ^ %{entry_diff_module_name}.Variants.to_name dup)
-        ;;
-
-        let t_of_sexp %{of_sexp_functions} sexp = of_entry_diffs_exn (t_of_sexp %{of_sexp_functions} sexp)
+           failwith ("Duplicate entry in tuple diff: " ^ %{entry_diff_module_name}.Variants.to_name dup)
 
         let create %{create_args ~optional:true} () =
           %{create_function ~value:create_arg `option}
@@ -278,6 +322,8 @@ let tuple_ml size =
           open %{diff_module_name}
           open %{entry_diff_module_name}
           %{function_implementations ~local:true}
+
+          let of_list_exn = of_list_exn
         end
       end
     end

@@ -44,6 +44,7 @@ let create (module M : Ast_builders) =
 
     let rec pattern t =
       match t with
+      | Text "_" -> ppat_any
       | Text v -> ppat_var (Located.mk v)
       | Tuple l -> ppat_tuple (List.map l ~f:pattern)
       | Record { module_; fields } ->

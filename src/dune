@@ -1,4 +1,8 @@
-(library (name ppx_ldiff) (public_name ppx_diff.ppx_diff) (kind ppx_rewriter)
- (libraries core core_kernel.nonempty_list ppxlib ppxlib_jane ldiffable)
+(library
+ (name ppx_diff)
+ (public_name ppx_diff.ppx_diff)
+ (kind ppx_rewriter)
+ (libraries core core_kernel.nonempty_list ppxlib ppxlib_jane diffable)
  (ppx_runtime_libraries ppx_diff.diffable)
- (preprocess (pps ppx_enumerate ppx_compare ppxlib.metaquot)))
+ (preprocess
+  (pps ppx_enumerate ppx_compare ppxlib.metaquot)))

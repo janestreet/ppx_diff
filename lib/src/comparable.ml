@@ -14,6 +14,7 @@ module Stable = struct
 
           let get = Set_diff.Stable.V1.get
           let apply_exn = Set_diff.Stable.V1.apply_exn
+          let of_list_exn = Set_diff.Stable.V1.of_list_exn
         end
       end
 
@@ -28,6 +29,7 @@ module Stable = struct
 
           let get = Map_diff.Stable.V1.get
           let apply_exn = Map_diff.Stable.V1.apply_exn
+          let of_list_exn = Map_diff.Stable.V1.of_list_exn
         end
       end
     end

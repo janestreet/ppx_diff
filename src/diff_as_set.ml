@@ -41,7 +41,7 @@ let create kind ~elt ~context =
         }
   in
   let module_ =
-    let prefix = [ "Ldiffable"; "Set_diff" ] in
+    let prefix = [ "Diffable"; "Set_diff" ] in
     let suffix =
       match stable_version with
       | None -> []
@@ -49,7 +49,7 @@ let create kind ~elt ~context =
     in
     List.map ~f:Module_name.of_string (prefix @ suffix) |> Longident_helper.of_simple_list
   in
-  (* [Set_module_name].Elt.t Ldiffable.Set_diff.t *)
+  (* [Set_module_name].Elt.t Diffable.Set_diff.t *)
   let diff_type =
     Type_kind.Constr { params = [ elt, () ]; module_; type_name = Type_name.t }
   in
@@ -59,6 +59,10 @@ let create kind ~elt ~context =
     |> Longident_helper.to_expression ~builder
   in
   { Core_diff.diff_type
-  ; functions = { get = fn Function_name.get; apply_exn = fn Function_name.apply_exn }
+  ; functions =
+      { get = fn Function_name.get
+      ; apply_exn = fn Function_name.apply_exn
+      ; of_list_exn = fn Function_name.of_list_exn
+      }
   }
 ;;

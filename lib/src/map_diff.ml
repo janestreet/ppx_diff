@@ -1,16 +1,18 @@
-open Core
-
 module Stable = struct
+  open Core.Core_stable
+  open Core
+
   module V1 = struct
     module Change = struct
       type ('k, 'v, 'v_diff) t =
         | Remove of 'k
         | Add of 'k * 'v
         | Diff of 'k * 'v_diff
-      [@@deriving sexp, bin_io]
+      [@@deriving sexp, bin_io, stable_witness]
     end
 
-    type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list [@@deriving sexp, bin_io]
+    type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list
+    [@@deriving sexp, bin_io, stable_witness]
 
     let get (type a a_diff) (get_a : from:a -> to_:a -> a_diff Optional_diff.t) ~from ~to_
       =
@@ -44,6 +46,11 @@ module Stable = struct
           Map.set acc ~key ~data:(apply_a_exn (Map.find_exn acc key) diff))
     ;;
 
+    let of_list_exn _ _ = function
+      | [] -> Optional_diff.none
+      | l -> Optional_diff.return (List.concat l)
+    ;;
+
     module Make (M : sig
       module Key : sig
         type t
@@ -57,6 +64,7 @@ module Stable = struct
          and type ('v, 'v_diff) t := (M.Key.t, 'v, 'v_diff) t = struct
       let get = get
       let apply_exn = apply_exn
+      let of_list_exn = of_list_exn
     end
   end
 end

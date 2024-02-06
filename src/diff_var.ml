@@ -9,5 +9,7 @@ let create (var : Var.t) ~builder : Core_diff.t =
   let get = var_fn Function_name.get in
   (* apply_exn derived_on diff = _apply_a_exn derived_on diff *)
   let apply_exn = var_fn Function_name.apply_exn in
-  { diff_type = Var diff_type; functions = { get; apply_exn } }
+  { diff_type = Var diff_type
+  ; functions = { get; apply_exn; of_list_exn = var_fn Function_name.of_list_exn }
+  }
 ;;

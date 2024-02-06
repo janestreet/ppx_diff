@@ -1,6 +1,6 @@
 open Core
 
-(* Diff a type that looks like [v ?([@ldiff.xxx]) Map_module.t] *)
+(* Diff a type that looks like [v ?([@diff.xxx]) Map_module.t] *)
 let create
   (kind : How_to_diff.t Type_kind.core_kind)
   ~key
@@ -9,7 +9,7 @@ let create
   =
   let { Context.builder; stable_version; _ } = context in
   let open (val builder : Builder.S) in
-  (* [value] = v ?[@ldiff.xxx]
+  (* [value] = v ?[@diff.xxx]
      [map_module_name] = Map_module
   *)
   let how_to_diff = How_to_diff.Custom.As_map { key } in
@@ -24,13 +24,17 @@ let create
   in
   let value_diff = create_core value in
   let { Core_diff.diff_type = value_diff_type
-      ; functions = { get = get_value_diff; apply_exn = apply_value_diff }
+      ; functions =
+          { get = get_value_diff
+          ; apply_exn = apply_value_diff
+          ; of_list_exn = of_list_value_diff
+          }
       }
     =
     value_diff
   in
   let module_ =
-    let prefix = [ "Ldiffable"; "Map_diff" ] in
+    let prefix = [ "Diffable"; "Map_diff" ] in
     let suffix =
       match stable_version with
       | None -> []
@@ -66,7 +70,7 @@ let create
           ; type_name = Type_name.t
           }
     in
-    (* ([Map_module_name].Key.t, [value], [diff_of_value]) Ldiffable.Map_diff.t *)
+    (* ([Map_module_name].Key.t, [value], [diff_of_value]) Diffable.Map_diff.t *)
     Type_kind.Constr
       { params =
           [ key, (); value |> Type_kind.map_core ~f:(const ()); value_diff_type, () ]
@@ -81,5 +85,9 @@ let create
   in
   let get = [%expr [%e fn Function_name.get] [%e get_value_diff]] in
   let apply_exn = [%expr [%e fn Function_name.apply_exn] [%e apply_value_diff]] in
-  { Core_diff.diff_type; functions = { get; apply_exn } }
+  let of_list_exn =
+    [%expr
+      [%e fn Function_name.of_list_exn] [%e of_list_value_diff] [%e apply_value_diff]]
+  in
+  { Core_diff.diff_type; functions = { get; apply_exn; of_list_exn } }
 ;;

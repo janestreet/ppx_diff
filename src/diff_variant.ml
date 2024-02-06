@@ -154,7 +154,8 @@ module Row : sig
        (For [2] and [3] the local_ keyword is only used for expresions, not for patterns.)
     *)
     val derived_on
-      :  'row_type t
+      :  ?skip_local:bool
+      -> 'row_type t
       -> ('row_type, _, _) Maybe_polymorphic.t
       -> Prefix.t
       -> Build_helper.t
@@ -224,7 +225,7 @@ end = struct
              (* Create an additional module, which is effectively
 
                 {[ module R_record = struct
-                     type t = { global_ field_a : t_a ; global_ field_b : t_b ; ... } [@deriving ldiff]
+                     type t = { global_ field_a : t_a ; global_ field_b : t_b ; ... } [@deriving diff]
                    end
                 ]}
 
@@ -288,54 +289,58 @@ end = struct
     ;;
 
     let derived_on_structure
+      ?(skip_local = false)
       (type row_type diff_type prefix)
       (t : row_type t)
       (maybe_polymorphic : (row_type, diff_type, prefix) Maybe_polymorphic.t)
       txt
       ~for_diff
       =
-      match (maybe_polymorphic : _ Maybe_polymorphic.t) with
-      | Polymorphic -> Text (Prefix.to_string txt)
-      | Not_polymorphic ->
-        (match t.row_type with
-         | Single _ -> Text (Prefix.to_string txt)
-         | Inlined_record fields ->
-           let record =
-             Record
-               { module_ =
-                   Option.some_if
-                     for_diff
-                     (Module_name_generator.record_module_name
-                        t.module_name_generator
-                        t.row_name)
-               ; fields =
-                   List.map fields ~f:(fun { field_name; _ } ->
-                     { field_name
-                     ; field_value =
-                         Text
-                           (Prefix.to_prefix (Some txt)
-                            ^ Record_field_name.to_string field_name)
-                     })
-               }
-           in
-           if for_diff then Local_expr record else record
-         | Inlined_tuple tuple ->
-           let tuple_entry i =
-             let text = Text (Prefix.to_string txt ^ Int.to_string (i + 1)) in
-             if not for_diff
-             then text
-             else
+      if String.( = ) (Prefix.to_string txt) "_"
+      then Text (Prefix.to_string txt)
+      else (
+        match (maybe_polymorphic : _ Maybe_polymorphic.t) with
+        | Polymorphic -> Text (Prefix.to_string txt)
+        | Not_polymorphic ->
+          (match t.row_type with
+           | Single _ -> Text (Prefix.to_string txt)
+           | Inlined_record fields ->
+             let record =
                Record
-                 { module_ = Some (Module_name.of_string "Gel")
+                 { module_ =
+                     Option.some_if
+                       for_diff
+                       (Module_name_generator.record_module_name
+                          t.module_name_generator
+                          t.row_name)
                  ; fields =
-                     [ { field_name = Record_field_name.of_string "g"
-                       ; field_value = text
-                       }
-                     ]
+                     List.map fields ~f:(fun { field_name; _ } ->
+                       { field_name
+                       ; field_value =
+                           Text
+                             (Prefix.to_prefix (Some txt)
+                              ^ Record_field_name.to_string field_name)
+                       })
                  }
-           in
-           let tuple = Tuple (List.mapi tuple ~f:(fun i _ -> tuple_entry i)) in
-           if for_diff then Local_expr tuple else tuple)
+             in
+             if for_diff && not skip_local then Local_expr record else record
+           | Inlined_tuple tuple ->
+             let tuple_entry i =
+               let text = Text (Prefix.to_string txt ^ Int.to_string (i + 1)) in
+               if not for_diff
+               then text
+               else
+                 Record
+                   { module_ = Some (Module_name.of_string "Gel")
+                   ; fields =
+                       [ { field_name = Record_field_name.of_string "g"
+                         ; field_value = text
+                         }
+                       ]
+                   }
+             in
+             let tuple = Tuple (List.mapi tuple ~f:(fun i _ -> tuple_entry i)) in
+             if for_diff && not skip_local then Local_expr tuple else tuple))
     ;;
 
     let derived_on = derived_on_structure ~for_diff:true
@@ -556,6 +561,12 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
                 (List.map rows ~f:diff_case @ List.filter_map rows ~f:set_case)]]
 ;;
 
+let name_expr row which ~builder =
+  let open (val builder : Builder.S) in
+  pexp_constant
+    (Pconst_string (Row.name row which |> Variant_row_name.to_string, loc, None))
+;;
+
 let apply_exn ~rows ~builder ~maybe_polymorphic:mp =
   let open (val builder : Builder.S) in
   let set_cases =
@@ -619,10 +630,7 @@ let apply_exn ~rows ~builder ~maybe_polymorphic:mp =
                  in
                  [%e Row.get_row row mp Derived_on Prefix.to_ |> e]]))
   in
-  let name_expr row which =
-    pexp_constant
-      (Pconst_string (Row.name row which |> Variant_row_name.to_string, loc, None))
-  in
+  let name_expr = name_expr ~builder in
   let error_cases =
     List.filter_map rows ~f:(fun row ->
       match Row.diff row with
@@ -685,6 +693,198 @@ let apply_exn ~rows ~builder ~maybe_polymorphic:mp =
     ~init
 ;;
 
+let of_list ~rows ~maybe_polymorphic:mp ~builder =
+  let open (val builder : Builder.S) in
+  let name_expr = name_expr ~builder in
+  let case = case ~guard:None in
+  let set_rows = List.filter rows ~f:(define_set_case rows) in
+  let diff_rows =
+    List.filter_map rows ~f:(fun row ->
+      Option.map (Row.diff row) ~f:(fun diff -> row, diff))
+  in
+  let prefix = Prefix.of_string in
+  let any = prefix "_" in
+  let diff_variant_name variant =
+    (* match variant with
+       | Set_to_a -> "Set_to_a"
+       | Diff_b _ -> "Diff_b"
+       ...
+    *)
+    let case which row =
+      case ~lhs:(Row.get_row row mp which any |> p) ~rhs:(name_expr row which)
+    in
+    pexp_match
+      variant
+      (List.map set_rows ~f:(case Set)
+       @ List.map diff_rows ~f:(fun (row, _diff) -> case Diff row))
+  in
+  let r row which prefix = Row.get_row row mp which prefix in
+  let error_case ?(local = false) row which =
+    let error =
+      [%expr
+        failwith
+          ("Diff mismatch. Can't combine diff of variant "
+           ^ [%e name_expr row which]
+           ^ " with diff of variant "
+           ^ diff_variant_name t)]
+    in
+    case ~lhs:[%pat? t] ~rhs:(if local then [%expr [%e error]] else error)
+  in
+  let unpack_diffs row ~for_:which =
+    (* Get all [Diff]s of a given variant:
+
+       function
+       | Diff_b d -> d
+       | _ -> mismatch error
+
+       [for_] is just used in the error message to indicate we tried to combine non-matching variants
+
+       If there are no diffs of a given variant (e.g. if the variant is just [A], not [A
+       of ...]), there is only the error case.
+
+       If there is only one row, there are no error cases.
+    *)
+    pexp_function
+      ([ Option.some_if
+           (Option.is_some (Row.diff row))
+           (case ~lhs:[%pat? [%p r row Diff Prefix.diff |> p]] ~rhs:[%expr diff])
+       ; Option.some_if (List.length rows > 1) (error_case row which)
+       ]
+       |> List.filter_opt)
+  in
+  let diffs_only_case row =
+    (* All ts are of a [Diff] variant, no [Set] variant *)
+    case
+      ~lhs:[%pat? [], [%p r row Diff (Prefix.of_string "hd") |> p] :: tl]
+      ~rhs:
+        [%expr
+          let tl = Base.List.map tl ~f:[%e unpack_diffs row ~for_:Diff] in
+          let d = [%e Row.function_name row Function_name.of_list_exn |> e] (hd :: tl) in
+          Optional_diff.map d ~f:(fun diff -> [%e r row Diff Prefix.diff |> e])]
+  in
+  let set_followed_by_diffs_case row =
+    (* We can ignore everything before the last [Set], so we just look at a single [Set]
+       followed by a bunch of [Diffs] *)
+    case
+      ~lhs:[%pat? [%p r row Set Prefix.to_ |> p] :: _, diffs]
+      ~rhs:
+        (let unpack_diffs = unpack_diffs row ~for_:Set in
+         match Row.diff row with
+         | None ->
+           (* The original row is just [A], not [A of ...], so there is no [Diff_a]. That
+              means following [Set_to_A] with any diff is an error *)
+           [%expr
+             let () = Base.List.iter diffs ~f:[%e unpack_diffs] in
+             Optional_diff.return [%e r row Set Prefix.to_ |> e]]
+         | Some type_ ->
+           let derived_on ?skip_local () =
+             Row.Row_diff.derived_on type_ mp ?skip_local Prefix.to_
+           in
+           (* List.fold (unpack_diffs diffs) ~init:to_ ~f:(fun acc diff ->
+              apply_exn_B acc diff)
+           *)
+           [%expr
+             let diffs = Base.List.map diffs ~f:[%e unpack_diffs] in
+             let [%p derived_on () |> p] =
+               Base.List.fold
+                 ~init:[%e derived_on ~skip_local:true () |> e]
+                 diffs
+                 ~f:(fun acc diff ->
+                   let [%p derived_on () |> p] =
+                     [%e Row.function_name row Function_name.apply_exn |> e] acc diff
+                   in
+                   [%e derived_on ~skip_local:true () |> e])
+             in
+             Optional_diff.return [%e r row Set Prefix.to_ |> e]])
+  in
+  let expr =
+    if List.is_empty diff_rows
+    then
+      (* All diffs are of the [Set_to] variant, so just pick the last one *)
+      [%expr
+        function
+        | [] -> Optional_diff.none
+        | _ :: _ as l -> Optional_diff.return (Base.List.last_exn l)]
+    else
+      [%expr
+        function
+        | [] -> Optional_diff.none
+        | [ hd ] -> Optional_diff.return hd
+        | l ->
+          (* Otherwise look at the last [Set_to] (if any) + any diffs after it *)
+          let diffs_rev, rest_rev =
+            Base.List.rev l
+            |> Base.List.split_while
+                 ~f:
+                   [%e
+                     let case row which return =
+                       case ~lhs:[%pat? [%p r row which any |> p]] ~rhs:return
+                     in
+                     pexp_function
+                       (List.map diff_rows ~f:(fun (row, _) -> case row Diff [%expr true])
+                        @ List.map set_rows ~f:(fun row -> case row Set [%expr false]))]
+          in
+          let diffs = Base.List.rev diffs_rev in
+          [%e
+            let any_row rows which =
+              List.map rows ~f:(fun row -> r row which any |> p)
+              |> List.reduce_exn ~f:ppat_or
+            in
+            pexp_match
+              [%expr rest_rev, diffs]
+              ([ case ~lhs:[%pat? [], []] ~rhs:[%expr assert false] ]
+               @ (if List.is_empty diff_rows
+                  then []
+                  else
+                    [ case (* the first elt in [rest_rev] can't be a [Diff _]  *)
+                        ~lhs:[%pat? [%p any_row (List.map diff_rows ~f:fst) Diff] :: _, _]
+                        ~rhs:[%expr assert false]
+                    ])
+               @ (if List.is_empty set_rows
+                  then []
+                  else
+                    [ case (* [diffs] don't contain a [Set _]  *)
+                        ~lhs:[%pat? _, [%p any_row set_rows Set] :: _]
+                        ~rhs:[%expr assert false]
+                    ; case (* [Set _] followed by no diffs, just return the [Set _] *)
+                        ~lhs:[%pat? ([%p any_row set_rows Set] as t) :: _, []]
+                        ~rhs:[%expr Optional_diff.return t]
+                    ])
+               @ List.map diff_rows ~f:(fun (row, _) -> diffs_only_case row)
+               @ List.map set_rows ~f:set_followed_by_diffs_case)]]
+  in
+  let init =
+    (* The diff_variant_name function is only used in error cases *)
+    if List.is_empty diff_rows || List.length rows = 1
+    then expr
+    else
+      [%expr
+        let diff_variant_name diff = [%e diff_variant_name [%expr diff]] in
+        [%e expr]]
+  in
+  List.fold
+    diff_rows
+    ~f:(fun expr (row, diff) ->
+      (* Pre-allocate all the [apply/of_list] functions *)
+      let core_diff = Row.Row_diff.core_diff diff in
+      let expr =
+        if define_set_case rows row
+        then
+          [%expr
+            let [%p Row.function_name row Function_name.apply_exn |> p] =
+              [%e core_diff.functions.apply_exn]
+            in
+            [%e expr]]
+        else expr
+      in
+      [%expr
+        let [%p Row.function_name row Function_name.of_list_exn |> p] =
+          [%e core_diff.functions.of_list_exn]
+        in
+        [%e expr]])
+    ~init
+;;
+
 let create_maybe_polymorphic
   (type row_type diff_type prefix)
   (maybe_polymorphic : (row_type, diff_type, prefix) Maybe_polymorphic.t)
@@ -709,7 +909,8 @@ let create_maybe_polymorphic
   in
   let get = get ~builder ~rows ~maybe_polymorphic in
   let apply_exn = apply_exn ~builder ~rows ~maybe_polymorphic in
-  let functions = { Diff.Functions.get; apply_exn } in
+  let of_list_exn = of_list ~builder ~rows ~maybe_polymorphic in
+  let functions = { Diff.Functions.get; apply_exn; of_list_exn } in
   diff_type rows maybe_polymorphic, List.filter_opt prefix, functions
 ;;
 

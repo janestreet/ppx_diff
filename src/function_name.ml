@@ -3,6 +3,7 @@ include String
 
 let get = "get"
 let apply_exn = "apply_exn"
+let of_list_exn = "of_list_exn"
 
 let function_of_var t var =
   (* Starts with a "_", so that some functions can be unused without the compiler

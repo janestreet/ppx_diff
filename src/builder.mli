@@ -1,5 +1,5 @@
 (* Helper module which allows us to write expressions in a way that are more readable to
-   developers familiar with Ocaml, but not so familiar with Ppxlib *)
+   developers familiar with OCaml, but not so familiar with Ppxlib *)
 open! Core
 open Ppxlib
 

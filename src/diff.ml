@@ -5,6 +5,7 @@ module Functions = struct
   type t =
     { get : expression
     ; apply_exn : expression
+    ; of_list_exn : expression
     }
 
   let to_items
@@ -35,7 +36,12 @@ module Functions = struct
         ]
         { result_mode = derived_on_mode; result_type = derived_on }
     in
-    let fun_type base =
+    let of_list_base _derived_on t =
+      tarrow
+        [ { arg_label = Nolabel; arg_mode = None; arg_type = [%type: [%t t] list] } ]
+        { result_mode = Some Local; result_type = [%type: [%t t] Optional_diff.t] }
+    in
+    let fun_type base ~var_functions =
       let v = Var.core_type ~builder in
       let derived_on_mode = if derived_on_type_is_local then Some Local else None in
       (* Generate the parametrized functions, e.g.
@@ -43,32 +49,51 @@ module Functions = struct
          (from:'b -> to_:'b -> local_ 'b_diff Optional_diff.t)
       *)
       tarrow_maybe
-        (List.map vars ~f:(fun var ->
-           let arg_type = base (None, v var) (v (Var.diff_var var)) in
-           { arg_label = Nolabel; arg_mode = None; arg_type }))
+        (List.concat_map vars ~f:(fun var ->
+           List.map var_functions ~f:(fun fn ->
+             let arg_type = fn (None, v var) (v (Var.diff_var var)) in
+             { arg_label = Nolabel; arg_mode = None; arg_type })))
         (base
            (derived_on_mode, pointer derived_on_type_declaration)
            (pointer diff_type_declaration))
     in
     let sig_items =
       [%sig:
-        val get : [%t fun_type get_base]
-        val apply_exn : [%t fun_type apply_base]]
+        val get : [%t fun_type get_base ~var_functions:[ get_base ]]
+        val apply_exn : [%t fun_type apply_base ~var_functions:[ apply_base ]]
+
+        val of_list_exn
+          : [%t fun_type of_list_base ~var_functions:[ of_list_base; apply_base ]]]
     in
     let struct_items =
-      Result.map t_or_error ~f:(fun { get; apply_exn } ->
-        let fn ~name ~init =
+      Result.map t_or_error ~f:(fun { get; apply_exn; of_list_exn } ->
+        let fn ~names ~init () =
           let open (val builder : Builder.S) in
-          let var_functions = List.map vars ~f:(Function_name.function_of_var name) in
+          let var_functions =
+            List.concat_map vars ~f:(fun var ->
+              List.map names ~f:(fun name -> Function_name.function_of_var name var))
+          in
           (* [fun _get_a _get_b -> init] *)
           List.fold_right var_functions ~init ~f:(fun var_fn expr ->
             [%expr fun [%p p var_fn] -> [%e expr]])
         in
         [%str
-          let get : [%t fun_type get_base] = [%e fn ~name:Function_name.get ~init:get]
+          let get : [%t fun_type get_base ~var_functions:[ get_base ]] =
+            [%e fn ~names:[ Function_name.get ] ~init:get ()]
+          ;;
 
-          let apply_exn : [%t fun_type apply_base] =
-            [%e fn ~name:Function_name.apply_exn ~init:apply_exn]
+          let apply_exn : [%t fun_type apply_base ~var_functions:[ apply_base ]] =
+            [%e fn ~names:[ Function_name.apply_exn ] ~init:apply_exn ()]
+          ;;
+
+          let of_list_exn
+            : [%t fun_type of_list_base ~var_functions:[ of_list_base; apply_base ]]
+            =
+            [%e
+              fn
+                ~names:[ Function_name.of_list_exn; Function_name.apply_exn ]
+                ~init:of_list_exn
+                ()]
           ;;])
     in
     { Items.sig_items; struct_items }
@@ -108,7 +133,12 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
   let diff_type_declaration kind ~unboxed =
     { Type_declaration.params = diff_type_params; name = Type_name.t; kind; unboxed }
   in
-  let diff_type_declaration, diff_type_flags, additional_type, additional_functions =
+  let ( diff_type_declaration
+      , diff_type_flags
+      , additional_type
+      , compare_functions
+      , create_functions )
+    =
     let module Flags = Type_declaration.Flags in
     match diff_type with
     | This { kind; nonrec_; unboxed_override } ->
@@ -118,7 +148,7 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
         | Some unboxed -> unboxed
         | None -> Type_kind.can_be_unboxed kind
       in
-      diff_type_declaration kind ~unboxed, flags, Items.empty, Items.empty
+      diff_type_declaration kind ~unboxed, flags, Items.empty, Items.empty, Items.empty
     | Sorted_list { single_kind; single_module_name } ->
       (* type ('a, 'b, 'a_diff, 'b_diff) single = [single_kind]
       *)
@@ -266,47 +296,31 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
               acc)
           ~init:(if args_are_optional then [%expr fun () -> [%e init]] else init)
       in
-      let additional_functions =
-        let single = Module_name.to_string single_module_name |> String.lowercase in
-        let of_list_exn_name = sprintf "of_%ss_exn" single in
-        let of_list_exn = Build_helper.Text of_list_exn_name in
-        let sig_items =
-          [%sig:
-            val singleton : [%t core_to_ppx single_type] -> [%t t_]
-
-            [%%i
-              psig_value
-                (value_description
-                   ~name:(Located.mk of_list_exn_name)
-                   ~type_:[%type: [%t list_kind |> core_to_ppx] -> [%t t_]]
-                   ~prim:[])]
-
-            val create : [%t create_type]
-            val create_of_variants : [%t create_of_variants_type]]
-        in
-        let variants_to_rank = variants "to_rank" in
-        let create =
+      let variants_to_rank = variants "to_rank" in
+      let compare_functions =
+        let sig_items = [] in
+        let struct_items =
           [%str
-            open! Base
-
             let compare_rank t1 t2 =
-              Int.compare ([%e variants_to_rank] t1) ([%e variants_to_rank] t2)
+              Base.Int.compare ([%e variants_to_rank] t1) ([%e variants_to_rank] t2)
             ;;
 
             let equal_rank t1 t2 =
-              Int.equal ([%e variants_to_rank] t1) ([%e variants_to_rank] t2)
-            ;;
-
-            let singleton [%p Text single |> p] = [ [%e Text single |> e] ]
-
-            let [%p of_list_exn |> p] =
-              fun l ->
-              let l = List.sort l ~compare:compare_rank in
-              match List.find_consecutive_duplicate l ~equal:equal_rank with
-              | None -> l
-              | Some (dup, _) ->
-                failwith ("Duplicate entry in diff: " ^ [%e variants "to_name"] dup)
-            ;;
+              Base.Int.equal ([%e variants_to_rank] t1) ([%e variants_to_rank] t2)
+            ;;]
+        in
+        { Items.sig_items; struct_items = Ok struct_items }
+      in
+      let create_functions =
+        let sig_items =
+          [%sig:
+            val singleton : [%t core_to_ppx single_type] -> [%t t_]
+            val create : [%t create_type]
+            val create_of_variants : [%t create_of_variants_type]]
+        in
+        let create =
+          [%str
+            let singleton x = [ x ]
 
             let create =
               [%e
@@ -332,12 +346,18 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
           let init =
             [%expr
               fun sexp ->
-                [%e e of_list_exn]
+                let l =
                   [%e
                     pexp_apply
                       [%expr t_of_sexp]
                       (List.map var_functions ~f:(fun fn -> Nolabel, e fn)
-                       @ [ Nolabel, [%expr sexp] ])]]
+                       @ [ Nolabel, [%expr sexp] ])]
+                  |> Base.List.sort ~compare:compare_rank
+                in
+                match Base.List.find_consecutive_duplicate l ~equal:equal_rank with
+                | None -> l
+                | Some (dup, _) ->
+                  failwith ("Duplicate entry in diff: " ^ [%e variants "to_name"] dup)]
           in
           (* [fun _get_a _get_b -> init] *)
           List.fold_right
@@ -357,7 +377,11 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
            to override [t_of_sexp] (if one exists) *)
         { Items.sig_items; struct_items = Ok struct_items }
       in
-      diff_type_declaration, diff_type_flags, single_module, additional_functions
+      ( diff_type_declaration
+      , diff_type_flags
+      , single_module
+      , compare_functions
+      , create_functions )
   in
   (* type ('a, 'b) derived_on = ('a, 'b) [type_to_diff.name] *)
   let derived_on_type_declaration =
@@ -384,8 +408,9 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
   let maybe_private_items =
     let items =
       [ Type_declaration.to_items diff_type_declaration ~context ~flags:diff_type_flags
+      ; compare_functions
       ; fun_items
-      ; additional_functions
+      ; create_functions
       ]
       |> Items.concat
     in
@@ -407,7 +432,7 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
       in
       { Items.sig_items; struct_items })
   in
-  (* If ldiff is not exposed in the mli, the [derived_on] type might be unused *)
+  (* If diff is not exposed in the mli, the [derived_on] type might be unused *)
   let ignore_unused_type_warning =
     { Items.sig_items = []; struct_items = Ok [%str [@@@ocaml.warning "-34"]] }
   in
