@@ -1,4 +1,4 @@
-open Core
+open Base
 
 module Stable : sig
   module V1 : sig

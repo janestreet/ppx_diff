@@ -1,5 +1,5 @@
 (* Represents the contents of a module which implements Diffable.Diff.S_plain *)
-open! Core
+open! Base
 open Ppxlib
 
 module Functions : sig

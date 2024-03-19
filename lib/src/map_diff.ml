@@ -1,7 +1,8 @@
-module Stable = struct
-  open Core.Core_stable
-  open Core
+open Base
+open Bin_prot.Std
+open Stable_witness.Export
 
+module Stable = struct
   module V1 = struct
     module Change = struct
       type ('k, 'v, 'v_diff) t =

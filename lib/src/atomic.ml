@@ -1,4 +1,4 @@
-open Core
+open Base
 
 module Make_base_diff (M : sig
   type t [@@deriving equal]

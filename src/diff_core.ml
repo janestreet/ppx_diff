@@ -1,4 +1,4 @@
-open! Core
+open! Base
 
 let rec create core ~context =
   let { Context.builder; sig_or_struct; _ } = context in

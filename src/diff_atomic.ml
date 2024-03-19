@@ -1,4 +1,4 @@
-open Core
+open Base
 open Ppxlib
 
 let error_on_custom_how_to_diff how_to_diff ~atomic ~builder =
@@ -7,7 +7,7 @@ let error_on_custom_how_to_diff how_to_diff ~atomic ~builder =
   | None -> ()
   | Some how_to_diff ->
     raise_error
-      (sprintf
+      (Printf.sprintf
          "%s will be ignored because it is inside a type already marked %s"
          (How_to_diff.Custom.to_attribute_string how_to_diff)
          (How_to_diff.Custom.to_string (Atomic atomic)))
@@ -19,7 +19,7 @@ let validate_no_vars vars atomic ~builder =
   | _ :: _ ->
     let open (val builder : Builder.S) in
     raise_error
-      (sprintf
+      (Printf.sprintf
          "[%s] is not supported for parametrized types"
          (How_to_diff.Custom.to_string (Atomic atomic)))
 ;;
@@ -32,7 +32,7 @@ let validate_sig_or_struct ~atomic ~sig_or_struct ~builder =
     let atomic_using_compare = How_to_diff.Atomic.to_string { using_compare = true } in
     let atomic_using_equal = How_to_diff.Atomic.to_string { using_compare = false } in
     raise_error
-      (sprintf
+      (Printf.sprintf
          "[%s] is not supported in signatures/mlis, please use [%s] instead (which will \
           still work if you use [%s] in the structure/ml)"
          atomic_using_compare

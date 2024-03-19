@@ -1,4 +1,5 @@
-open! Core
+open! Base
+open Printf
 
 let module_name ~size = sprintf "Tuple%i" size
 let diff_module_name = "Diff"

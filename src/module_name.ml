@@ -1,4 +1,4 @@
-open Core
+open Base
 include String
 
 let generate ~prefix ~type_name =

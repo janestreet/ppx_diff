@@ -1,4 +1,4 @@
-open Core
+open Base
 include String
 
 let of_string = Fn.id

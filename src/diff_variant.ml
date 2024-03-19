@@ -19,7 +19,7 @@
         | Diff_c of c_diff
    }]
 *)
-open Core
+open Base
 open Ppxlib
 open Build_helper
 
@@ -81,8 +81,8 @@ module Module_name_generator : sig
   val record_module_name : t -> Variant_row_name.t -> Module_name.t
 end = struct
   type t =
-    { collisions : Module_name.Set.t
-    ; record_module_names : Module_name.t Variant_row_name.Table.t
+    { collisions : (Module_name.t, Module_name.comparator_witness) Set.t
+    ; record_module_names : (Variant_row_name.t, Module_name.t) Hashtbl.t
     }
 
   let create
@@ -97,7 +97,7 @@ end = struct
     in
     let collisions =
       let rec hds = function
-        | Longident_helper.Simple (hd :: _) -> [ hd ]
+        | Longident_helper.Simple (hd, _) -> [ hd ]
         | Functor_application (functor_, arg, _tl) -> hds functor_ @ hds arg
       in
       variant
@@ -106,9 +106,9 @@ end = struct
            match module_ with
            | None -> []
            | Some module_ -> hds module_)
-      |> Module_name.Set.of_list
+      |> Set.of_list (module Module_name)
     in
-    { collisions; record_module_names = Variant_row_name.Table.create () }
+    { collisions; record_module_names = Hashtbl.create (module Variant_row_name) }
   ;;
 
   let generate_record_module_name t row_name =
@@ -241,9 +241,11 @@ end = struct
              let type_name = Type_name.t in
              let kind_to_diff =
                Type_kind.Record { fields = record_fields; local; equal_to = None }
-               |> Type_kind.map ~f:(const ())
+               |> Type_kind.map ~f:(fun _ -> ())
              in
-             let type_to_diff_vars = kind_to_diff |> Type_kind.vars |> Var.Set.of_list in
+             let type_to_diff_vars =
+               kind_to_diff |> Type_kind.vars |> Set.of_list (module Var)
+             in
              let type_to_diff_params =
                List.filter all_params ~f:(fun param ->
                  Set.mem type_to_diff_vars (Type_param.var param))
@@ -458,7 +460,7 @@ let diff_type
       ( Option.some_if (define_set_case rows row) (Row.name row Set, derived_on_type)
       , Option.map diff ~f:(fun diff ->
           let (diff_row_type : row_type) =
-            let core = Type_kind.map_core (diff.diff_type, ()) ~f:(const None) in
+            let core = Type_kind.map_core (diff.diff_type, ()) ~f:(fun _ -> None) in
             match maybe_polymorphic with
             | Polymorphic -> core
             | Not_polymorphic -> Single core
@@ -467,13 +469,13 @@ let diff_type
     |> List.unzip
   in
   let rows = List.filter_opt (set_rows @ diff_rows) in
-  let map_rows rows ~f = List.map rows ~f:(Tuple2.map_snd ~f:(Option.map ~f)) in
+  let map_rows rows ~f = List.map rows ~f:(fun (name, x) -> name, Option.map ~f x) in
   match maybe_polymorphic with
   | Polymorphic ->
-    Type_kind.Polymorphic_variant (map_rows rows ~f:(Type_kind.map_core ~f:(const ())))
+    Type_kind.Polymorphic_variant (map_rows rows ~f:(Type_kind.map_core ~f:(fun _ -> ())))
   | Not_polymorphic ->
     Type_kind.Variant
-      { rows = map_rows rows ~f:(Type_kind.map_variant_row_type ~f:(const ()))
+      { rows = map_rows rows ~f:(Type_kind.map_variant_row_type ~f:(fun _ -> ()))
       ; equal_to = None
       }
 ;;

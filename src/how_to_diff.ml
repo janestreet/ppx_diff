@@ -1,4 +1,4 @@
-open! Core
+open! Base
 open Ppxlib
 
 module Atomic = struct
@@ -94,7 +94,7 @@ module Custom = struct
       | _ :: _ ->
         let open (val builder : Builder.S) in
         raise_error
-          (sprintf
+          (Printf.sprintf
              "at most one of %s can be specified"
              (List.map Flat.all ~f:Flat.to_attribute_string
               |> List.sort ~compare:String.compare
@@ -127,13 +127,15 @@ module Custom = struct
       ;;
 
       let of_string =
-        let all = List.map all ~f:(fun t -> to_string t, t) |> String.Map.of_alist_exn in
+        let all =
+          List.map all ~f:(fun t -> to_string t, t) |> Map.of_alist_exn (module String)
+        in
         fun s ~builder ->
           let open (val builder : Builder.S) in
           match Map.find all s with
           | None ->
             raise_error
-              (sprintf
+              (Printf.sprintf
                  "Unknown how to diff: %s. Known values are: %s"
                  s
                  (Map.keys all |> String.concat ~sep:", "))
@@ -183,7 +185,7 @@ module Maybe_abstract = struct
           if Flat.compare (supported_for did_you_mean) how <> 0
           then ""
           else
-            sprintf
+            Printf.sprintf
               " Since you are using %s=\"%s\", did you mean to use \"%s\" instead of \
                \"%s\"?"
               Label.how
@@ -192,7 +194,7 @@ module Maybe_abstract = struct
               (label not_supported)
       in
       raise_error
-        (sprintf
+        (Printf.sprintf
            "\"%s\" can only be specified when %s=\"%s\".%s"
            (label not_supported)
            Label.how

@@ -1,4 +1,4 @@
-open Core
+open Base
 open Ppxlib
 open Shared
 
@@ -12,7 +12,7 @@ let check_no_custom_how_to_diff_on_equal_to ~equal_to ~builder =
           | Some how_to_diff ->
             let open (val builder : Builder.S) in
             raise_error
-              (sprintf
+              (Printf.sprintf
                  {|%s will be ignored.
 On types like
    type t = some_other_type = repeated type definion
@@ -57,7 +57,7 @@ let generate context type_to_diff_declaration ~how_to_diff : Items.t =
     }
   in
   let type_to_diff_declaration =
-    Type_declaration.map type_to_diff_declaration ~f:(const ())
+    Type_declaration.map type_to_diff_declaration ~f:(fun _ -> ())
   in
   diff |> Diff.add_prefix ~prefix |> Diff.to_module ~context ~type_to_diff_declaration
 ;;

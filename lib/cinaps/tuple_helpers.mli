@@ -1,4 +1,4 @@
-open! Core
+open! Base
 
 val max_supported : int * Lexing.position
 val tuples_mli : unit -> string

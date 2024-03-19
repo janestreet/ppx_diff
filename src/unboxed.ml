@@ -1,4 +1,4 @@
-open Core
+open Base
 open Ppxlib
 
 let attribute_name = "unboxed"

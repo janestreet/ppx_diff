@@ -1,4 +1,6 @@
-open Core
+open Base
+open Base_quickcheck.Export
+open Bin_prot.Std
 
 (*$
   open! Core

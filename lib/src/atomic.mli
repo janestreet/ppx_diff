@@ -1,4 +1,4 @@
-open! Core
+open! Base
 
 module Make_diff (M : sig
   type t [@@deriving sexp, bin_io, equal]

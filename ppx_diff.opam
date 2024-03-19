@@ -11,8 +11,7 @@ build: [
 ]
 depends: [
   "ocaml" {>= "4.14.0"}
-  "core"
-  "core_kernel"
+  "base"
   "gel"
   "ppx_compare"
   "ppx_enumerate"

@@ -1,6 +1,6 @@
 (* Helper module which represents building blocks that [Builder] can use to generate more
    readable ppx expressions *)
-open! Core
+open! Base
 
 type t =
   | Text of string

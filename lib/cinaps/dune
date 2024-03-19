@@ -1,6 +1,6 @@
 (library
  (name diffable_cinaps)
  (public_name ppx_diff.diffable_cinaps)
- (libraries core)
+ (libraries base)
  (preprocess
   (pps ppx_jane)))

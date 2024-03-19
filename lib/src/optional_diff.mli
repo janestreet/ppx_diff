@@ -2,7 +2,7 @@
 
    If we have a [local_ 'a t] that means that ['a] was allocated, but ['a option] was not
 *)
-open! Core
+open! Base
 
 type 'a t
 

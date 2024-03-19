@@ -1,4 +1,4 @@
-open Core
+open Base
 open Ppxlib
 
 (* For a constr, e.g.
@@ -29,21 +29,17 @@ let create
   let param_diffs = List.map params ~f:create_core in
   (* [X.Diff] *)
   let module_ =
-    Longident_helper.to_simple_list
-      module_
-      ~builder
-      ~on_functor_application:
-        (const
-           (Error.createf
-              "Functor applications are not supported (with the exception of \"set\" for \
-               elements and \"map\" for keys)"))
+    Longident_helper.to_simple_list module_ ~builder ~on_functor_application:(fun _ ->
+      Error.createf
+        "Functor applications are not supported (with the exception of \"set\" for \
+         elements and \"map\" for keys)")
     @ [ Module_name.diff_module_name ~type_to_diff_name:type_name ]
   in
   (* (type1, type2, 'a, Diff_of_type1.t, Diff_of_type2.t, 'a_diff) X.Diff.t *)
   let diff_type =
     Type_kind.Constr
       { params =
-          List.map params ~f:(Type_kind.map_core ~f:(const ()))
+          List.map params ~f:(Type_kind.map_core ~f:(fun _ -> ()))
           @ List.map param_diffs ~f:(fun diff -> Core_diff.diff_type diff, ())
       ; module_ = Longident_helper.of_simple_list module_
       ; type_name = Type_name.t
@@ -53,7 +49,7 @@ let create
   let fn_name fn =
     List.map module_ ~f:Module_name.to_string
     |> Longident_helper.of_simple_list
-    |> Longident_helper.add_suffix ~suffix:[ Function_name.to_string fn ]
+    |> Longident_helper.add_suffix ~suffix:(Function_name.to_string fn, [])
     |> Longident_helper.to_expression ~builder
   in
   let get =

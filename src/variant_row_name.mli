@@ -1,2 +1,2 @@
-open Core
-include Identifiable
+open Base
+include Identifiable.S

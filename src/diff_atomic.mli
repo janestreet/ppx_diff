@@ -1,4 +1,4 @@
-open! Core
+open! Base
 
 val create_core
   :  How_to_diff.t Type_kind.core_kind

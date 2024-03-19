@@ -1,4 +1,4 @@
-open Core
+open Base
 open! Ppxlib
 
 module Entry = struct
@@ -34,7 +34,7 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
   let extra =
     match extra with
     | None -> []
-    | Some [] -> raise_error (sprintf "%s should not be empty" Extra.label)
+    | Some [] -> raise_error (Extra.label ^ " should not be empty")
     | Some (_ :: _ as extra) -> extra
   in
   let deriving =
@@ -54,6 +54,8 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
                 match expr.pexp_desc with
                 | Pexp_ident { txt = Lident d; _ } -> [ d ]
                 | Pexp_tuple list -> List.concat_map list ~f:get
+                | Pexp_apply ({ pexp_desc = Pexp_ident { txt = Lident d; _ }; _ }, _) ->
+                  [ d ]
                 | _ -> []
               in
               get expr
@@ -62,7 +64,7 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
   let default =
     List.filter
       deriving
-      ~f:(Set.mem Entry.(Set.of_list [ sexp_of; of_sexp; sexp; bin_io ]))
+      ~f:(Set.mem Entry.(Set.of_list (module Entry) [ sexp_of; of_sexp; sexp; bin_io ]))
     @
     match (how_to_diff : How_to_diff.Atomic.t option), sig_or_struct with
     | None, _ | _, `sig_ -> []
@@ -75,15 +77,17 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
       if mem t entry
       then
         raise_error
-          (sprintf
-             "Unnecessary entry %s in %s. %s is already derived by default"
-             entry
-             Extra.label
-             entry)
+          ("Unnecessary entry "
+           ^ entry
+           ^ " in "
+           ^ Extra.label
+           ^ ". "
+           ^ entry
+           ^ " is already derived by default")
       else add t entry)
   | dups ->
     raise_error
-      (sprintf "Duplicate entries in %s: %s" Extra.label (String.concat ~sep:", " dups))
+      ("Duplicate entries in " ^ Extra.label ^ ": " ^ String.concat ~sep:", " dups)
 ;;
 
 let attribute t ~builder =

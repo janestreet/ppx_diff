@@ -6,7 +6,7 @@
    [name = t]
    [kind = 'a option]
 *)
-open! Core
+open! Base
 open Ppxlib
 
 module Flags : sig

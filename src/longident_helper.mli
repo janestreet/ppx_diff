@@ -1,4 +1,4 @@
-open! Core
+open! Base
 open Ppxlib
 
 (** Wrapper around [Longident] that's easier to work with.

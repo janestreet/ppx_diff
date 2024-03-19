@@ -2,7 +2,6 @@ include Basic_diffs
 include Diffable_intf
 module Diff = Diff_intf
 module Atomic = Atomic
-module Comparable = Comparable
 module Optional_diff = Optional_diff
 module Tuples = Tuples
 module Set_diff = Set_diff

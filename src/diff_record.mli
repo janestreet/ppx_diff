@@ -1,4 +1,4 @@
-open! Core
+open! Base
 
 val create_record
   :  record_fields:How_to_diff.t Type_kind.record_field list

@@ -1,4 +1,4 @@
-open! Core
+open! Base
 open Ppxlib
 
 type 'extra core_kind =

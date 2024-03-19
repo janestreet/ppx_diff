@@ -137,8 +137,10 @@ type t =
 
 `X.t`, `Y.t` and `Z.t` must also either derive `diff` or otherwise implement `Diffable.S`.
 
-Some basic types are already supported, in particular `int`, `float`, `string`, `bool`,
-`char`, `unit` and `option`, so it is ok to reference those.
+Some types are already supported, so it's ok to reference those. This includes:
+
+- basic types: `int`, `float`, `string`, `bool`, `char`, `unit` and `option`
+- `Set` and `Map` created using the various `Comparable.Make` functors
 
 ## Parametric types
 
@@ -497,17 +499,17 @@ Similar helper modules exist for tuples in `Diffable.Tuples.TupleN.For_inlined_t
 Since diffs are by default nested, any type you reference must also derive `diff` or
 otherwise implement `Diffable.S`
 
-For example, if `Time_ns.Ofday.t` doesn't implement `Diffable.S`, then the following:
+For example, if `Some_type` doesn't implement `Diffable.S`, then the following:
 
 ```ocaml
-type t = Time_ns.Ofday.t * Time_ns.Ofday.t
+type t = Some_type.t * Some_type.t
 [@@deriving diff]
 ```
 
 Will give you an error like:
 
 ```ocaml
-Error: Unbound module Time_ns.Ofday.Diff
+Error: Unbound module Some_type.Diff
 ```
 
 Often it's enough to just add `[@@deriving diff]` to the referenced type.
@@ -518,7 +520,7 @@ to handle them.
 
 ## Atomic diffs
 
-Some types, e.g. any `Identifiable`, or indeed `Time_ns.Ofday.t`, are super simple, and
+Some types, e.g. any `Identifiable`, or indeed `Some_type.t`, are super simple, and
 what we really want is to have `type Diff.t = t` and only return a diff if the two values
 aren't equal. We call such diffs `atomic`.
 
@@ -533,7 +535,7 @@ For instance, the error from the example above will go away if you write
 
 ```ocaml
 type t =
-  (Time_ns.Ofday.t [@diff.atomic]) * (Time_ns.Ofday.t [@diff.atomic])
+  (Some_type.t [@diff.atomic]) * (Some_type.t [@diff.atomic])
 [@@deriving diff]
 ```
 
@@ -541,8 +543,8 @@ The annotation also works for record fields:
 
 ```ocaml
 type t =
-  { start : Time_ns.Ofday.t [@diff.atomic]
-  ; stop : Time_ns.Ofday.t [@diff.atomic]
+  { start : Some_type.t [@diff.atomic]
+  ; stop : Some_type.t [@diff.atomic]
   }
 [@@deriving diff]
 ```
@@ -551,8 +553,8 @@ and for variants:
 
 ```ocaml
 type t =
-  | Start of Time_ns.Ofday.t [@diff.atomic]
-  | Stop of Time_ns.Ofday.t [@diff.atomic]
+  | Start of Some_type.t [@diff.atomic]
+  | Stop of Some_type.t [@diff.atomic]
 [@@deriving diff]
 ```
 
@@ -560,8 +562,8 @@ The two examples above are in fact equivalent to
 
 ```ocaml
 type t =
-  { start : (Time_ns.Ofday.t [@diff.atomic])
-  ; stop : (Time_ns.Ofday.t [@diff.atomic])
+  { start : (Some_type.t [@diff.atomic])
+  ; stop : (Some_type.t [@diff.atomic])
   }
   [@@deriving diff]
 ```
@@ -569,8 +571,8 @@ and
 
 ```ocaml
 type t =
-  | Start of (Time_ns.Ofday.t [@diff.atomic])
-  | Stop of (Time_ns.Ofday.t [@diff.atomic])
+  | Start of (Some_type.t [@diff.atomic])
+  | Stop of (Some_type.t [@diff.atomic])
   [@@deriving diff]
 ```
 
@@ -581,7 +583,7 @@ but slightly nicer to write.
 Finally, you can mark your whole type atomic by using the `how` parameter:
 
 ```ocaml
-type t = Time_ns.Ofday.t [@@deriving equal, diff ~how:"atomic"]
+type t = Some_type.t [@@deriving equal, diff ~how:"atomic"]
 ```
 
 Any type that you mark `atomic`, must also derive / otherwise implement `equal`.
@@ -595,10 +597,10 @@ To do this, use `Diffable.Make_atomic`, e.g.
 
 ```ocaml
 module Id : sig
-  include Identifiable
+  type t [@@deriving sexp, bin_io]
   include Diffable.S with type t := t and type Diff.t = t
 end = struct
-  include String
+  type t = string [@@deriving sexp, bin_io, equal]
   include functor Diffable.Atomic.Make
 end
 ```
@@ -638,13 +640,13 @@ If a type doesn't implement `equal`, but does implement `compare`, you can also 
 E.g. the following will work:
 
 ```ocaml
-type t = Time_ns.Ofday.t [@@deriving compare, diff ~how:"atomic_using_compare"]
+type t = Some_type.t [@@deriving compare, diff ~how:"atomic_using_compare"]
 ```
 
 ```ocaml
 type t =
-  { start : Time_ns.Ofday.t [@diff.atomic_using_compare]
-  ; stop : Time_ns.Ofday.t [@diff.atomic_using_compare]
+  { start : Some_type.t [@diff.atomic_using_compare]
+  ; stop : Some_type.t [@diff.atomic_using_compare]
   }
 [@@deriving diff]
 ```
@@ -676,47 +678,27 @@ The primitive `float` type is already handled using `compare`
 
 ## Sets and maps
 
-Since diffs are nested, the following:
+Sets and maps implemented using the various `Make` modules in `Comparable` and
+`Comparable.Stable` already implement `Diffable.S` and `Diffable.S1` respectively, so you
+can use them out of the box.
 
-```ocaml
+All of the following will work:
+
+```
 type t = My_id.Set.t [@@deriving diff]
+type t = My_id.Stable.V1.Set.t [@@deriving diff]
+type t = { value : float My_id.Map.t } [@@deriving diff]
+type t = { value : float My_id.Stable.V1.Map.t } [@@deriving diff]
+type 'a t = | Value of 'a My_id.Map.t [@@deriving diff]
+type 'a t = | Value of 'a My_id.Stable.V1.Map.t [@@deriving diff]
 ```
 
-may give you an error like
-
-```ocaml
-Error: Unbound module My_id.Set.Diff
-```
-
-and the following:
-
-```ocaml
-type t = My_data.t My_id.Map.t [@@deriving diff]
-```
-
-may give you an error like
-
-```ocaml
-Error: Unbound module My_id.Map.Diff
-```
-
-### ~how:"set" and ~how:"map"
-
-
-Of course you could annotate the type with `atomic`, but you can also do better.
-
-The `set` and `map` annotations will cause the diff to only contain "what changed", i.e.
-
-```ocaml
-type t = My_id.Set.t [@@deriving diff ~how:"set"]
-```
-
-will generate
+The diff for sets looks like:
 
 ```ocaml
 module Diff : sig
   type derived_on = t
-  type t = My_id.Set.Elt.t Diffable.Set_diff.t
+  type t = My_id.t Diffable.Set_diff.t
   ...
 end
 ```
@@ -733,18 +715,12 @@ module Diffable.Set_diff : sig
 end
 ```
 
-and
-
-```ocaml
-type t = My_data.t My_id.Map.t [@@deriving diff ~how:"map"]
-```
-
-will generate
+and the diff for maps looks like:
 
 ```ocaml
 module Diff : sig
-  type derived_on = t
-  type t = (My_id.Map.Key.t, My_data.t, My_data.Diff.t) Diffable.Map_diff.t
+  type 'v derived_on = 'v t
+  type ('v, 'v_diff) t = (My_id.t, 'v, 'v_diff) Diffable.Map_diff.t
   ...
 end
 ```
@@ -754,89 +730,15 @@ where
 ```ocaml
 module Diffable.Map_diff : sig
   module Change : sig
-    type ('key, 'a, 'a_diff) t =
+    type ('key, 'v, 'v_diff) t =
       | Remove of 'key
-      | Add of 'key * 'a
-      | Diff of 'key * 'a_diff
+      | Add of 'key * 'v
+      | Diff of 'key * 'v_diff
     [@@deriving sexp, bin_io]
   end
 
-  type ('key, 'a, 'a_diff) t = ('key, 'a, 'a_diff) Change.t list [@@deriving sexp, bin_io]
+  type ('key, 'v, 'v_diff) t = ('key, 'v, 'v_diff) Change.t list [@@deriving sexp, bin_io]
 end
-```
-
-### Key and Elt
-
-The above signatures mean we assume that `Set` has an `Elt` submodule, and `Map`
-has a `Key` submodule. However, if you want to use a different key/elt, this can be
-overridden. The overrides are particularly helpful for applicative functors.
-
-E.g. for maps you can write
-
-```ocaml
-type t = float Map.Stable.V1.M(Int).t [@@deriving diff ~how:"map" ~key:int]
-```
-
-and for sets you can write
-
-```ocaml
-type t = Set.Stable.V1.M(Int).t [@@deriving diff ~how:"map" ~elt:int]
-```
-
-### [@diff.set] and [@diff.map]
-
-The annotations work as attributes as well, in the same way that the `atomic` ones do.
-This means all of the following will work:
-
-```ocaml
-type t = (My_id.Set.t [@diff.set]) * int [@@deriving diff]
-```
-
-```ocaml
-type t = (My_data.t My_id.Map.t [@diff.map]) * int [@@deriving diff]
-```
-
-```ocaml
-type t =
-  { foo : My_id.Set.t [@diff.set]
-  ; bar : int
-  }
-[@@deriving diff]
-```
-
-```ocaml
-type t =
-  { foo : My_data.t My_id.Map.t [@diff.map]
-  ; bar : int
-  }
-[@@deriving diff]
-```
-
-```ocaml
-type t =
-  | Foo of My_id.Set.t [@diff.set]
-  | Bar
-[@@deriving diff]
-```
-
-```ocaml
-type t =
-  | Foo of My_data.t My_id.Map.t [@diff.map]
-  | Bar
-[@@deriving diff]
-```
-
-
-You can also override the key/elt using the attributes.
-
-For maps you can write:
-```ocaml
-type t = (float Map.Stable.V1.M(Int).t [@diff.map (key : int)]) * int [@@deriving diff]
-```
-
-and for sets you can write:
-```ocaml
-type t = (Set.Stable.V1.M(Int).t [@@diff.set (elt : int)]) * int [@@deriving diff]
 ```
 
 ### Map value diffs
@@ -846,69 +748,95 @@ By default the values in a map are also diffed.
 So if the following:
 
 ```ocaml
-type t = Time_ns.Ofday.t My_id.Map.t [diff.map]
+type t = Some_type.t My_id.Map.t
 ```
 
 gives you an error
 
 ```ocaml
-Error: Unbound module Time_ns.Ofday.Diff
+Error: Unbound module Some_type.Diff
 ```
 
 you can fix it by writing
 
 
 ```ocaml
-type t = (Time_ns.Ofday.t [@diff.atomic]) My_id.Map.t [diff.map]
+type t = (Some_type.t [@diff.atomic]) My_id.Map.t
 ```
 
-### Diffable.Comparable.Make
+### Sets and maps with applicative functors
 
-To avoid having to annotate the type with `set` and `map` everywhere, you can also add the following to `My_id`
+Applicative functors are not supported by diff in general, so none of the following will work:
 
 ```ocaml
-module My_id : sig
-  include Core.Identifiable
-
-  include
-    Diffable.Comparable.S
-    with type t := t
-     and type comparator_witness := comparator_witness
-end = struct
-  include Core.String
-  include functor Diffable.Comparable.Make
-end
+type t = Set.M(Int).t [@@deriving diff]
+type t = float Map.M(Int).t [@@deriving diff]
+type t = Set.Stable.V1.M(Int).t [@@deriving diff]
+type t = float Map.Stable.V1.M(Int).t [@@deriving diff]
 ```
 
+However, there is specific support for applicative functors for sets and maps: you can use
+`set` and `map` annotations similar to the `atomic` annotation.
 
-"Set" and "map" diffs do not work on types like
+Here are some examples of what will work:
 
 ```ocaml
-type t = (elt, comparator_witness) Set.t
+type t = Set.M(Int).t [@@deriving diff ~how:"set"]
+type t = (float Map.M(Int).t [@diff.map]) [@@deriving diff]
+type t = { value : Set.Stable.V1.M(Int).t [@diff.set] } [@@deriving diff]
+type t = | Value of float Map.Stable.V1.M(Int).t [@diff.map] [@@deriving diff]
 ```
 
-or
+### Comparator witness
 
-```
-type t = (key, value, comparator_witness) Map.t
-```
-
-You will instead need to define helper modules
+The following are not supported by default:
 
 ```ocaml
-module Set_helper = struct
-  type t = (elt, comparator_witness) Set.t
-  module Elt = struct
-    type t = elt
-  end
-end
+type t = (int, Int.comparator_witness) Set.t [@@deriving diff]
+type t = (int, float, Int.comparator_witness) Map.t [@@deriving diff]
+```
 
-module Map_helper = struct
-  type t = (key, value, comparator_witness) Map.t
-  module Key = struct
-    type t = key
-  end
-end
+But they do work with the `set` and `map` annotations.
+
+Here are some examples of what will work:
+
+```ocaml
+type t = (int, Int.comparator_witness) Set.t [@@deriving diff ~how:"set"]
+type t = (int, float, Int.comparator_witness) Map.t [@@deriving diff ~how:"map"]
+type t = { value : (int, Int.comparator_witness) Set.t [@diff.set] } [@@deriving diff]
+type t = 
+  | Value of (int, float, Int.comparator_witness) Map.t [@diff.map] 
+[@@deriving diff]
+```
+
+### General set/map diff
+
+For the set/map annotations to work in general, they need to be able to determine the
+element type of the set / the key type of the map. 
+
+#### Default
+
+All of the examples so far use a heuristic to determine the key/elt. 
+By default we assume that the key/elt is `X.t` for:
+
+- any applicative functor with `X` as an argument (e.g. `Set.M(X).t`, `Map.Stable.V1.M(X).t`)
+- any type called `X.Set.t` or `X.Map.t`
+- any type where `X.t` is the first of two parameters for set or first of three for map (so
+  that it works for `(X.t, X.comparator_witness) Set.t` or `(X.t, Y.t,
+  X.comparator_witness) Map.t`))
+
+#### Overrides
+
+If none of the above heuristics apply (or if you want to override the default for whatever
+reason), you will need to provide the key/elt explicitly.
+
+Any of the following would work:
+
+```ocaml
+type t = My_int_set.t [@@deriving diff ~how:"set" ~elt:int]
+type t = float My_int_map.t [@@deriving diff ~how:"map" ~key:int]
+type t = { value : My_int_set.t [@diff.set (elt : int)] } [@@deriving diff]
+type t = | Value of float My_int_map.t [@diff.map (key : int)] [@@deriving diff]
 ```
 
 # Abstract diffs
@@ -922,14 +850,14 @@ E.g. the following is rather verbose
 ```ocaml
 module Range : sig
   type t =
-    { start : Time_ns.Ofday.t [@diff.atomic]
-    ; stop : Time_ns.Ofday.t [@diff.atomic]
+    { start : Some_type.t [@diff.atomic]
+    ; stop : Some_type.t [@diff.atomic]
     }
   [@@deriving diff]
 end = struct
   type t =
-    { start : Time_ns.Ofday.t [@diff.atomic]
-    ; stop : Time_ns.Ofday.t [@diff.atomic]
+    { start : Some_type.t [@diff.atomic]
+    ; stop : Some_type.t [@diff.atomic]
     }
   [@@deriving diff]
 end
@@ -943,8 +871,8 @@ You can do this either directly by writing:
 ```ocaml
 module Range : sig
   type t =
-    { start : Time_ns.Ofday.t
-    ; stop : Time_ns.Ofday.t
+    { start : Some_type.t
+    ; stop : Some_type.t
     }
 
   include Diffable.S with type t := t
@@ -956,8 +884,8 @@ or, equivalently, by using `~how:"abstract"`:
 ```ocaml
 module Range : sig
   type t =
-    { start : Time_ns.Ofday.t
-    ; stop : Time_ns.Ofday.t
+    { start : Some_type.t
+    ; stop : Some_type.t
     }
   [@@deriving diff ~how:"abstract"]
 end

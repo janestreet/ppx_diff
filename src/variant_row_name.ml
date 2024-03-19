@@ -1,2 +1,2 @@
-open Core
+open Base
 include String

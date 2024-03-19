@@ -1,4 +1,4 @@
-open! Core
+open! Base
 open Ppxlib
 
 type 'extra core_kind =
@@ -54,7 +54,7 @@ let rec core_to_ppx (core : unit core) ~builder =
     let lident_helper =
       module_
       |> Option.map ~f:(Longident_helper.map ~f:Module_name.to_string)
-      |> Longident_helper.add_suffix ~suffix:[ Type_name.to_string type_name ]
+      |> Longident_helper.add_suffix ~suffix:(Type_name.to_string type_name, [])
     in
     ptyp_constr
       (Located.mk (Longident_helper.to_longident lident_helper))
@@ -172,23 +172,17 @@ let fold t ~init ~f =
 ;;
 
 let vars t =
-  fold
-    t
-    ~init:Reversed_list.[]
-    ~f:(fun acc -> function
-      | Var var -> Reversed_list.(var :: acc)
-      | Tuple _ | Constr _ | Polymorphic_variant _ -> acc)
-  |> Reversed_list.rev
+  fold t ~init:[] ~f:(fun acc -> function
+    | Var var -> var :: acc
+    | Tuple _ | Constr _ | Polymorphic_variant _ -> acc)
+  |> List.rev
 ;;
 
 let constrs t =
-  fold
-    t
-    ~init:Reversed_list.[]
-    ~f:(fun acc -> function
-      | Constr constr -> Reversed_list.(constr :: acc)
-      | Var _ | Tuple _ | Polymorphic_variant _ -> acc)
-  |> Reversed_list.rev
+  fold t ~init:[] ~f:(fun acc -> function
+    | Constr constr -> constr :: acc
+    | Var _ | Tuple _ | Polymorphic_variant _ -> acc)
+  |> List.rev
 ;;
 
 let is_local = function
@@ -206,7 +200,8 @@ and map_core_kind kind ~f =
   | Constr { params; module_; type_name } ->
     Constr { params = List.map params ~f:map_core; module_; type_name }
   | Polymorphic_variant l ->
-    Polymorphic_variant (List.map l ~f:(Tuple2.map_snd ~f:(Option.map ~f:map_core)))
+    Polymorphic_variant
+      (List.map l ~f:(fun (name, maybe_core) -> name, Option.map maybe_core ~f:map_core))
 ;;
 
 let map_record fields ~f =
@@ -222,7 +217,8 @@ let map_variant_row_type row_type ~f =
 ;;
 
 let map_variant ~f =
-  List.map ~f:(Tuple2.map_snd ~f:(Option.map ~f:(map_variant_row_type ~f)))
+  List.map ~f:(fun (name, maybe_type) ->
+    name, Option.map maybe_type ~f:(map_variant_row_type ~f))
 ;;
 
 let map t ~f =
@@ -242,7 +238,7 @@ let map t ~f =
 
 let not_supported builder s =
   let open (val builder : Builder.S) in
-  raise_error (sprintf "%s not_supported" s)
+  raise_error (Printf.sprintf "%s not_supported" s)
 ;;
 
 let duplicate_how_to_diff how_to_diff1 how_to_diff2 ~builder =
@@ -250,8 +246,10 @@ let duplicate_how_to_diff how_to_diff1 how_to_diff2 ~builder =
   let s1 = How_to_diff.Custom.to_string how_to_diff1 in
   let s2 = How_to_diff.Custom.to_string how_to_diff2 in
   if String.( = ) s1 s2
-  then raise_error (sprintf "duplicate how to diff: \"%s\"" s1)
-  else raise_error (sprintf "cannot use both \"%s\" and \"%s\" on the same type" s1 s2)
+  then raise_error (Printf.sprintf "duplicate how to diff: \"%s\"" s1)
+  else
+    raise_error
+      (Printf.sprintf "cannot use both \"%s\" and \"%s\" on the same type" s1 s2)
 ;;
 
 let rec create_core core_type ~builder : How_to_diff.t core =
@@ -404,7 +402,7 @@ let of_ppx_kind
                 | None -> ()
                 | Some how_to_diff ->
                   raise_error
-                    (sprintf
+                    (Printf.sprintf
                        "%s attributes, e.g. %s not supported for %s"
                        Shared.name_of_ppx
                        (How_to_diff.Custom.to_attribute_string how_to_diff)
@@ -443,7 +441,7 @@ let of_ppx_kind
         | None -> ()
         | Some type_how_to_diff ->
           raise_error
-            (sprintf
+            (Printf.sprintf
                "%s will be ignored because it is inside a type already marked %s"
                (How_to_diff.Custom.to_attribute_string type_how_to_diff)
                (How_to_diff.Custom.Or_abstract.to_string Abstract)))
@@ -454,7 +452,7 @@ let of_ppx_kind
     let error type_kind =
       let open (val builder : Builder.S) in
       raise_error
-        (sprintf
+        (Printf.sprintf
            "\"%s\" can't be used with %s types"
            (How_to_diff.Custom.to_string how_to_diff)
            type_kind)

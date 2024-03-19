@@ -5,7 +5,7 @@
    [sig_items], the same should be true for [concat [t1 ; t2 ; ...]]
 *)
 
-open! Core
+open! Base
 open Ppxlib
 
 type t =

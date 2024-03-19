@@ -1,4 +1,4 @@
-open Core
+open Base
 open Ppxlib
 open Build_helper
 
@@ -81,9 +81,8 @@ let diff_type_kind ~field_diffs =
       { kind =
           Variant
             { rows =
-                [ Tuple2.map_snd (variant_row field_diff) ~f:(fun type_ ->
-                    Some (Type_kind.Single type_))
-                ]
+                (let name, type_ = variant_row field_diff in
+                 [ name, Some (Type_kind.Single type_) ])
             ; equal_to = None
             }
       ; nonrec_ = false

@@ -14,6 +14,12 @@ module type S = sig
   include S_plain with type derived_on := derived_on and type t := t
 end
 
+module type S_atomic = sig
+  type derived_on
+
+  include S with type derived_on := derived_on and type t = derived_on
+end
+
 module type S1_plain = sig
   type 'a derived_on
   type ('a, 'a_diff) t

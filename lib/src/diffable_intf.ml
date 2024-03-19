@@ -10,6 +10,12 @@ module type S = sig
   module Diff : Diff_intf.S with type derived_on = t
 end
 
+module type S_atomic = sig
+  type t
+
+  module Diff : Diff_intf.S_atomic with type derived_on = t
+end
+
 module type S1_plain = sig
   type 'a t
 

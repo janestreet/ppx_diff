@@ -1,4 +1,4 @@
-open! Core
+open! Base
 
 let create (var : Var.t) ~builder : Core_diff.t =
   let open (val builder : Builder.S) in

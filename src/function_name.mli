@@ -1,5 +1,5 @@
-open Core
-include Identifiable
+open Base
+include Identifiable.S
 
 val get : t
 val apply_exn : t

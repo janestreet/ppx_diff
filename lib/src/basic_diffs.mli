@@ -1,4 +1,4 @@
-open Core
+open Base
 
 module type S_with_quickcheck = sig
   type t [@@deriving quickcheck]

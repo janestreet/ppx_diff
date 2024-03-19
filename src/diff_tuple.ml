@@ -1,4 +1,5 @@
-open Core
+open Base
+open Printf
 
 let create ?(inlined = false) tuple ~builder ~create_core =
   let max, pos = Diffable.Tuples.max_supported in

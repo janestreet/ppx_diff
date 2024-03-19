@@ -1,6 +1,6 @@
 (* Helper module which allows us to write expressions in a way that are more readable to
    developers familiar with OCaml, but not so familiar with Ppxlib *)
-open! Core
+open! Base
 open Ppxlib
 
 module type Ast_builders = sig

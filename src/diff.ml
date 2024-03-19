@@ -1,4 +1,4 @@
-open Core
+open Base
 open Ppxlib
 
 module Functions = struct
@@ -156,9 +156,7 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
         let kind =
           Type_kind.Variant
             { rows =
-                List.map
-                  single_kind
-                  ~f:(Tuple2.map_snd ~f:(fun x -> Some (Type_kind.Single x)))
+                List.map single_kind ~f:(fun (name, x) -> name, Some (Type_kind.Single x))
             ; equal_to = None
             }
         in
@@ -167,9 +165,8 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
         ; kind =
             Variant
               { rows =
-                  List.map
-                    single_kind
-                    ~f:(Tuple2.map_snd ~f:(fun x -> Some (Type_kind.Single x)))
+                  List.map single_kind ~f:(fun (name, x) ->
+                    name, Some (Type_kind.Single x))
               ; equal_to = None
               }
         ; unboxed = Type_kind.can_be_unboxed kind
@@ -198,7 +195,7 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
                            (pmod_ident
                               (Located.mk
                                  (Longident_helper.to_longident
-                                    (Simple [ Module_name.to_string single_module_name ]))))
+                                    (Simple (Module_name.to_string single_module_name, [])))))
                          ~override:Fresh)
                   ]
             }
@@ -250,7 +247,7 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
       in
       let variants txt =
         Longident_helper.to_expression
-          (Simple [ Module_name.to_string single_module_name; "Variants"; txt ])
+          (Simple (Module_name.to_string single_module_name, [ "Variants"; txt ]))
           ~builder
       in
       let create_fn ~row_diff ~args_are_optional option_or_optional_diff =

@@ -1,44 +1,32 @@
-open Core
+open Base
 
 let create kind ~elt ~context =
   let { Context.builder; stable_version; _ } = context in
   let open (val builder : Builder.S) in
   let how_to_diff = How_to_diff.Custom.As_set { elt } in
-  let set_module_name, set_type_name =
+  let default_elt =
     match (kind : _ Type_kind.core_kind) with
-    | Constr { params = []; module_; type_name } -> module_, type_name
+    | Constr { params = []; module_; type_name } ->
+      Map_and_set_helper.key_or_elt_heuristic ~module_ ~type_name `Set
+    | Constr { params = [ elt; _comparator_witness ]; module_ = _; type_name = _ } ->
+      Type_kind.map_core elt ~f:(fun _ -> ()) |> fst |> Option.return
     | _ ->
       raise_error
-        (sprintf
-           "\"%s\" diff is only supported for named types with no parameters"
+        (Printf.sprintf
+           "\"%s\" diff is only supported for named types with no or two parameters"
            (How_to_diff.Custom.to_string how_to_diff))
   in
   (* [Set_module_name].Elt.t *)
   let elt =
     match elt with
     | Some elt ->
-      Type_kind.core_of_ppx elt ~builder |> Type_kind.map_core ~f:(const ()) |> fst
+      Type_kind.core_of_ppx elt ~builder |> Type_kind.map_core ~f:(fun _ -> ()) |> fst
     | None ->
-      let set_module_name =
-        Longident_helper.to_simple_list
-          set_module_name
-          ~builder
-          ~on_functor_application:
-            (const
-               (Error.createf
-                  "if using functor application with \"%s\" diff, you need to specify \
-                   \"%s\""
-                  (How_to_diff.Custom.to_string how_to_diff)
-                  How_to_diff.Label.elt))
-      in
-      Type_kind.Constr
-        { params = []
-        ; module_ =
-            set_module_name
-            @ [ Module_name.generate ~prefix:"Elt" ~type_name:set_type_name ]
-            |> Longident_helper.of_simple_list
-        ; type_name = Type_name.t
-        }
+      (match default_elt with
+       | Some elt -> elt
+       | None ->
+         raise_error
+           "Could not determine elt type for set diff. Please provide it manually")
   in
   let module_ =
     let prefix = [ "Diffable"; "Set_diff" ] in
@@ -55,7 +43,7 @@ let create kind ~elt ~context =
   in
   let module_ = Option.map module_ ~f:(Longident_helper.map ~f:Module_name.to_string) in
   let fn name =
-    Longident_helper.add_suffix module_ ~suffix:[ Function_name.to_string name ]
+    Longident_helper.add_suffix module_ ~suffix:(Function_name.to_string name, [])
     |> Longident_helper.to_expression ~builder
   in
   { Core_diff.diff_type

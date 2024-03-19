@@ -1,4 +1,6 @@
-open Core
+open Base
+open Base_quickcheck.Export
+open Bin_prot.Std
 
 module type S_with_quickcheck = sig
   type t [@@deriving quickcheck]
@@ -15,11 +17,16 @@ struct
   type t = M.t [@@deriving quickcheck]
 end
 
-module Diff_of_bool = Make_atomic_with_quickcheck (Bool)
-module Diff_of_char = Make_atomic_with_quickcheck (Char)
+module Diff_of_bool = Make_atomic_with_quickcheck (struct
+  type t = bool [@@deriving sexp, bin_io, equal, quickcheck]
+end)
+
+module Diff_of_char = Make_atomic_with_quickcheck (struct
+  type t = char [@@deriving sexp, bin_io, equal, quickcheck]
+end)
 
 module Diff_of_float = Make_atomic_with_quickcheck (struct
-  include Float
+  type t = float [@@deriving sexp, bin_io, compare, quickcheck]
 
   (* Overriding [equal], because
        - [Float.equal Float.nan Float.nan = false]
@@ -29,9 +36,17 @@ module Diff_of_float = Make_atomic_with_quickcheck (struct
   let equal = [%compare.equal: t]
 end)
 
-module Diff_of_int = Make_atomic_with_quickcheck (Int)
-module Diff_of_string = Make_atomic_with_quickcheck (String)
-module Diff_of_unit = Make_atomic_with_quickcheck (Unit)
+module Diff_of_int = Make_atomic_with_quickcheck (struct
+  type t = int [@@deriving sexp, bin_io, equal, quickcheck]
+end)
+
+module Diff_of_string = Make_atomic_with_quickcheck (struct
+  type t = string [@@deriving sexp, bin_io, equal, quickcheck]
+end)
+
+module Diff_of_unit = Make_atomic_with_quickcheck (struct
+  type t = unit [@@deriving sexp, bin_io, equal, quickcheck]
+end)
 
 module Diff_of_option = struct
   type 'a derived_on = 'a option [@@deriving sexp, bin_io]

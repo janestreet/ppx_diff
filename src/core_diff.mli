@@ -5,7 +5,7 @@
    used as building blocks for other types.
 *)
 
-open! Core
+open! Base
 
 type t =
   { diff_type : unit Type_kind.core_kind

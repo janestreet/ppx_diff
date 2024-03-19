@@ -1,4 +1,4 @@
-open! Core
+open! Base
 open Ppxlib
 
 val is_unboxed : type_declaration -> bool

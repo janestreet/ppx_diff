@@ -1,4 +1,4 @@
-open Core
+open Base
 
 (* Diff a type that looks like [v ?([@diff.xxx]) Map_module.t] *)
 let create
@@ -13,13 +13,19 @@ let create
      [map_module_name] = Map_module
   *)
   let how_to_diff = How_to_diff.Custom.As_map { key } in
-  let value, map_module_name, map_type_name =
+  let default_key, value =
     match kind with
-    | Constr { params = [ value ]; module_; type_name } -> value, module_, type_name
+    | Constr { params = [ value ]; module_; type_name } ->
+      let key = Map_and_set_helper.key_or_elt_heuristic ~module_ ~type_name `Map in
+      key, value
+    | Constr { params = [ key; value; _comparator_witness ]; module_ = _; type_name = _ }
+      ->
+      let key = key |> Type_kind.map_core ~f:(fun _ -> ()) |> fst in
+      Some key, value
     | _ ->
       raise_error
-        (sprintf
-           "\"%s\" diff is only supported for named types with a single parameter"
+        (Printf.sprintf
+           "\"%s\" diff is only supported for named types with one or three parameters"
            (How_to_diff.Custom.to_string how_to_diff))
   in
   let value_diff = create_core value in
@@ -47,40 +53,25 @@ let create
     let key =
       match key with
       | Some key ->
-        Type_kind.core_of_ppx key ~builder |> Type_kind.map_core ~f:(const ()) |> fst
+        Type_kind.core_of_ppx key ~builder |> Type_kind.map_core ~f:(fun _ -> ()) |> fst
       | None ->
-        let map_module_name =
-          Longident_helper.to_simple_list
-            map_module_name
-            ~builder
-            ~on_functor_application:
-              (const
-                 (Error.createf
-                    "if using functor application with \"%s\" diff, you need to specify \
-                     \"%s\""
-                    (How_to_diff.Custom.to_string how_to_diff)
-                    How_to_diff.Label.key))
-        in
-        Type_kind.Constr
-          { params = []
-          ; module_ =
-              map_module_name
-              @ [ Module_name.generate ~prefix:"Key" ~type_name:map_type_name ]
-              |> Longident_helper.of_simple_list
-          ; type_name = Type_name.t
-          }
+        (match default_key with
+         | Some key -> key
+         | None ->
+           raise_error
+             "Could not determine key type for map diff. Please provide it manually")
     in
     (* ([Map_module_name].Key.t, [value], [diff_of_value]) Diffable.Map_diff.t *)
     Type_kind.Constr
       { params =
-          [ key, (); value |> Type_kind.map_core ~f:(const ()); value_diff_type, () ]
+          [ key, (); value |> Type_kind.map_core ~f:(fun _ -> ()); value_diff_type, () ]
       ; module_
       ; type_name = Type_name.t
       }
   in
   let module_ = Option.map module_ ~f:(Longident_helper.map ~f:Module_name.to_string) in
   let fn name =
-    Longident_helper.add_suffix module_ ~suffix:[ Function_name.to_string name ]
+    Longident_helper.add_suffix module_ ~suffix:(Function_name.to_string name, [])
     |> Longident_helper.to_expression ~builder
   in
   let get = [%expr [%e fn Function_name.get] [%e get_value_diff]] in
