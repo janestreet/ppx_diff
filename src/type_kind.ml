@@ -75,14 +75,11 @@ let rec core_to_ppx (core : unit core) ~builder =
 let label_declarations record_fields ~builder =
   let open (val builder : Builder.S) in
   List.map record_fields ~f:(fun { field_name; field_type; mutable_; global } ->
-    let declaration =
-      label_declaration
-        ~name:(Located.mk (Record_field_name.to_string field_name))
-        ~type_:(core_to_ppx field_type ~builder)
-        ~mutable_:(if mutable_ then Mutable else Immutable)
-    in
-    let modality = if global then Some Global else None in
-    modality, declaration)
+    label_declaration
+      ~name:(Located.mk (Record_field_name.to_string field_name))
+      ~type_:(core_to_ppx field_type ~builder)
+      ~mutable_:(if mutable_ then Mutable else Immutable)
+      ~modality:(if global then Some Global else None))
 ;;
 
 let to_ppx_kind t ~builder =
@@ -91,7 +88,7 @@ let to_ppx_kind t ~builder =
   | Abstract -> Ptype_abstract, None
   | Core core -> Ptype_abstract, Some (core_to_ppx core ~builder)
   | Record { fields; local = (_ : bool); equal_to } ->
-    ( ptype_record (label_declarations fields ~builder)
+    ( Ptype_record (label_declarations fields ~builder)
     , Option.map equal_to ~f:(core_to_ppx ~builder) )
   | Variant { rows; equal_to } ->
     ( Ptype_variant
@@ -102,11 +99,13 @@ let to_ppx_kind t ~builder =
              ~args:
                (match row_type with
                 | None -> Pcstr_tuple []
-                | Some (Single type_) -> Pcstr_tuple [ core_to_ppx type_ ~builder ]
+                | Some (Single type_) ->
+                  pcstr_tuple_no_modalities [ core_to_ppx type_ ~builder ]
                 | Some (Inlined_tuple l) ->
-                  Pcstr_tuple (List.map l ~f:(fun t -> core_to_ppx t ~builder))
+                  pcstr_tuple_no_modalities
+                    (List.map l ~f:(fun t -> core_to_ppx t ~builder))
                 | Some (Inlined_record fields) ->
-                  pcstr_record (label_declarations fields ~builder))))
+                  Pcstr_record (label_declarations fields ~builder))))
     , Option.map equal_to ~f:(core_to_ppx ~builder) )
 ;;
 
@@ -140,7 +139,7 @@ let fold_record_fields l ~init ~f =
         ; mutable_ = (_ : bool)
         ; global = (_ : bool)
         }
-        -> fold_core field_type ~init:acc ~f)
+      -> fold_core field_type ~init:acc ~f)
 ;;
 
 let fold t ~init ~f =
@@ -337,7 +336,7 @@ let create_record fields ~builder =
       | Some Global -> true
       | None -> false
     in
-    let { pld_name; pld_mutable; pld_type; pld_loc = _; pld_attributes = _ } = field in
+    let { pld_name; pld_mutable; pld_type; pld_loc = _; pld_attributes = _; _ } = field in
     let field_type =
       let kind, how_to_diff = create_core pld_type ~builder in
       let how_to_diff =
@@ -411,7 +410,8 @@ let of_ppx_kind
               let variant_type =
                 match pcd_args with
                 | Pcstr_tuple [] -> None
-                | Pcstr_tuple [ core_type ] ->
+                | Pcstr_tuple [ arg ] ->
+                  let core_type = Ppxlib_jane.Shim.Pcstr_tuple_arg.to_core_type arg in
                   let kind, core_how_to_diff = create_core core_type ~builder in
                   let how_to_diff =
                     Option.merge
@@ -423,9 +423,13 @@ let of_ppx_kind
                 | Pcstr_record record ->
                   error_if_custom_how_to_diff "inlined records";
                   Some (Inlined_record (create_record record ~builder))
-                | Pcstr_tuple types ->
+                | Pcstr_tuple args ->
                   error_if_custom_how_to_diff "inlined tuples";
-                  Some (Inlined_tuple (List.map types ~f:(create_core ~builder)))
+                  Some
+                    (Inlined_tuple
+                       (List.map args ~f:(fun arg ->
+                          Ppxlib_jane.Shim.Pcstr_tuple_arg.to_core_type arg
+                          |> create_core ~builder)))
               in
               Variant_row_name.of_string pcd_name.txt, variant_type)
         ; equal_to = Option.map equal_to ~f:(create_core ~builder)

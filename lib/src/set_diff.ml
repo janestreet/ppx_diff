@@ -20,8 +20,8 @@ module Stable = struct
           Set.symmetric_diff from to_
           |> Sequence.to_list
           |> List.map ~f:(function
-               | First a -> Change.Remove a
-               | Second a -> Change.Add a)
+            | First a -> Change.Remove a
+            | Second a -> Change.Add a)
         in
         if List.is_empty diff then Optional_diff.none else Optional_diff.return diff)
     ;;
@@ -39,13 +39,14 @@ module Stable = struct
     ;;
 
     module Make (S : sig
-      module Elt : sig
-        type t
-        type comparator_witness
-      end
+        module Elt : sig
+          type t
+          type comparator_witness
+        end
 
-      type t = (Elt.t, Elt.comparator_witness) Set.t
-    end) : Diff_intf.S_plain with type derived_on := S.t and type t := S.Elt.t t = struct
+        type t = (Elt.t, Elt.comparator_witness) Set.t
+      end) : Diff_intf.S_plain with type derived_on := S.t and type t := S.Elt.t t =
+    struct
       let get = get
       let apply_exn = apply_exn
       let of_list_exn = of_list_exn

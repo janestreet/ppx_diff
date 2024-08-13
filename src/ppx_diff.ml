@@ -67,6 +67,7 @@ let validate_rec_flag (td : How_to_diff.t Type_declaration.t) rec_flag ~builder 
   | Recursive -> ()
   | Nonrecursive ->
     (match td.kind with
+     | Abstract -> ()
      | Type_kind.Core (Constr { type_name; module_ = None; _ }, _)
        when Type_name.( = ) type_name td.name -> ()
      | _ ->
@@ -118,13 +119,13 @@ let generator sig_or_struct ~f =
       +> What_to_derive.Extra.arg
       +> arg "stable_version" (Ast_pattern.eint __))
     (fun ~(loc : Location.t)
-         ~path:(_ : string)
-         ((rec_flag : rec_flag), (type_declarations : type_declaration list))
-         how
-         key
-         elt
-         extra_derive
-         stable_version ->
+      ~path:(_ : string)
+      ((rec_flag : rec_flag), (type_declarations : type_declaration list))
+      how
+      key
+      elt
+      extra_derive
+      stable_version ->
       let (builder : Builder.t) =
         Builder.create
           (module struct

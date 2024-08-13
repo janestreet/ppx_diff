@@ -2,6 +2,15 @@ open Base
 open Base_quickcheck.Export
 open Bin_prot.Std
 
+module Modes = struct
+  module Global = struct
+    include Modes.Global
+
+    (* This is normally derived in Core, which depends on Diffable. *)
+    type 'a t = 'a Modes.Global.t = { global : 'a } [@@unboxed] [@@deriving bin_io]
+  end
+end
+
 (*$
   open! Core
   open Diffable_cinaps
@@ -160,7 +169,7 @@ module Tuple2 = struct
   end
 
   module For_inlined_tuple = struct
-    type ('a1, 'a2) t = 'a1 Gel.t * 'a2 Gel.t [@@deriving sexp, bin_io]
+    type ('a1, 'a2) t = 'a1 Modes.Global.t * 'a2 Modes.Global.t [@@deriving sexp, bin_io]
 
     module Diff = struct
       type ('a1, 'a2) derived_on = ('a1, 'a2) t
@@ -175,8 +184,8 @@ module Tuple2 = struct
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
-          let { Gel.g = from_1 }, { Gel.g = from_2 } = from in
-          let { Gel.g = to_1 }, { Gel.g = to_2 } = to_ in
+          let { global = from_1 }, { global = from_2 } = from in
+          let { global = to_1 }, { global = to_2 } = to_ in
           let diff = [] in
           let diff =
             match%optional.Optional_diff get2 ~from:from_2 ~to_:to_2 with
@@ -194,7 +203,7 @@ module Tuple2 = struct
       ;;
 
       let apply_exn apply1_exn apply2_exn derived_on diff =
-        let { Gel.g = derived_on1 }, { Gel.g = derived_on2 } = derived_on in
+        let { global = derived_on1 }, { global = derived_on2 } = derived_on in
         let t1, diff =
           match diff with
           | T1 d :: tl -> apply1_exn derived_on1 d, tl
@@ -206,7 +215,7 @@ module Tuple2 = struct
           | _ -> derived_on2, diff
         in
         match diff with
-        | [] -> { Gel.g = t1 }, { Gel.g = t2 }
+        | [] -> { global = t1 }, { global = t2 }
         | _ :: _ -> failwith "BUG: non-empty diff after apply"
       ;;
 
@@ -425,7 +434,8 @@ module Tuple3 = struct
   end
 
   module For_inlined_tuple = struct
-    type ('a1, 'a2, 'a3) t = 'a1 Gel.t * 'a2 Gel.t * 'a3 Gel.t [@@deriving sexp, bin_io]
+    type ('a1, 'a2, 'a3) t = 'a1 Modes.Global.t * 'a2 Modes.Global.t * 'a3 Modes.Global.t
+    [@@deriving sexp, bin_io]
 
     module Diff = struct
       type ('a1, 'a2, 'a3) derived_on = ('a1, 'a2, 'a3) t
@@ -441,8 +451,8 @@ module Tuple3 = struct
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
-          let { Gel.g = from_1 }, { Gel.g = from_2 }, { Gel.g = from_3 } = from in
-          let { Gel.g = to_1 }, { Gel.g = to_2 }, { Gel.g = to_3 } = to_ in
+          let { global = from_1 }, { global = from_2 }, { global = from_3 } = from in
+          let { global = to_1 }, { global = to_2 }, { global = to_3 } = to_ in
           let diff = [] in
           let diff =
             match%optional.Optional_diff get3 ~from:from_3 ~to_:to_3 with
@@ -465,7 +475,7 @@ module Tuple3 = struct
       ;;
 
       let apply_exn apply1_exn apply2_exn apply3_exn derived_on diff =
-        let { Gel.g = derived_on1 }, { Gel.g = derived_on2 }, { Gel.g = derived_on3 } =
+        let { global = derived_on1 }, { global = derived_on2 }, { global = derived_on3 } =
           derived_on
         in
         let t1, diff =
@@ -484,7 +494,7 @@ module Tuple3 = struct
           | _ -> derived_on3, diff
         in
         match diff with
-        | [] -> { Gel.g = t1 }, { Gel.g = t2 }, { Gel.g = t3 }
+        | [] -> { global = t1 }, { global = t2 }, { global = t3 }
         | _ :: _ -> failwith "BUG: non-empty diff after apply"
       ;;
 
@@ -744,7 +754,8 @@ module Tuple4 = struct
   end
 
   module For_inlined_tuple = struct
-    type ('a1, 'a2, 'a3, 'a4) t = 'a1 Gel.t * 'a2 Gel.t * 'a3 Gel.t * 'a4 Gel.t
+    type ('a1, 'a2, 'a3, 'a4) t =
+      'a1 Modes.Global.t * 'a2 Modes.Global.t * 'a3 Modes.Global.t * 'a4 Modes.Global.t
     [@@deriving sexp, bin_io]
 
     module Diff = struct
@@ -761,14 +772,14 @@ module Tuple4 = struct
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
-          let ( { Gel.g = from_1 }
-              , { Gel.g = from_2 }
-              , { Gel.g = from_3 }
-              , { Gel.g = from_4 } )
+          let ( { global = from_1 }
+              , { global = from_2 }
+              , { global = from_3 }
+              , { global = from_4 } )
             =
             from
           in
-          let { Gel.g = to_1 }, { Gel.g = to_2 }, { Gel.g = to_3 }, { Gel.g = to_4 } =
+          let { global = to_1 }, { global = to_2 }, { global = to_3 }, { global = to_4 } =
             to_
           in
           let diff = [] in
@@ -798,10 +809,10 @@ module Tuple4 = struct
       ;;
 
       let apply_exn apply1_exn apply2_exn apply3_exn apply4_exn derived_on diff =
-        let ( { Gel.g = derived_on1 }
-            , { Gel.g = derived_on2 }
-            , { Gel.g = derived_on3 }
-            , { Gel.g = derived_on4 } )
+        let ( { global = derived_on1 }
+            , { global = derived_on2 }
+            , { global = derived_on3 }
+            , { global = derived_on4 } )
           =
           derived_on
         in
@@ -826,7 +837,7 @@ module Tuple4 = struct
           | _ -> derived_on4, diff
         in
         match diff with
-        | [] -> { Gel.g = t1 }, { Gel.g = t2 }, { Gel.g = t3 }, { Gel.g = t4 }
+        | [] -> { global = t1 }, { global = t2 }, { global = t3 }, { global = t4 }
         | _ :: _ -> failwith "BUG: non-empty diff after apply"
       ;;
 
@@ -855,17 +866,17 @@ module Tuple5 = struct
 
     type ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t =
       ( 'a1
-      , 'a2
-      , 'a3
-      , 'a4
-      , 'a5
-      , 'a1_diff
-      , 'a2_diff
-      , 'a3_diff
-      , 'a4_diff
-      , 'a5_diff )
-      Entry_diff.t
-      list
+        , 'a2
+        , 'a3
+        , 'a4
+        , 'a5
+        , 'a1_diff
+        , 'a2_diff
+        , 'a3_diff
+        , 'a4_diff
+        , 'a5_diff )
+        Entry_diff.t
+        list
     [@@deriving sexp, bin_io, quickcheck]
 
     let compare_rank t1 t2 =
@@ -1139,7 +1150,11 @@ module Tuple5 = struct
 
   module For_inlined_tuple = struct
     type ('a1, 'a2, 'a3, 'a4, 'a5) t =
-      'a1 Gel.t * 'a2 Gel.t * 'a3 Gel.t * 'a4 Gel.t * 'a5 Gel.t
+      'a1 Modes.Global.t
+      * 'a2 Modes.Global.t
+      * 'a3 Modes.Global.t
+      * 'a4 Modes.Global.t
+      * 'a5 Modes.Global.t
     [@@deriving sexp, bin_io]
 
     module Diff = struct
@@ -1156,19 +1171,19 @@ module Tuple5 = struct
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
-          let ( { Gel.g = from_1 }
-              , { Gel.g = from_2 }
-              , { Gel.g = from_3 }
-              , { Gel.g = from_4 }
-              , { Gel.g = from_5 } )
+          let ( { global = from_1 }
+              , { global = from_2 }
+              , { global = from_3 }
+              , { global = from_4 }
+              , { global = from_5 } )
             =
             from
           in
-          let ( { Gel.g = to_1 }
-              , { Gel.g = to_2 }
-              , { Gel.g = to_3 }
-              , { Gel.g = to_4 }
-              , { Gel.g = to_5 } )
+          let ( { global = to_1 }
+              , { global = to_2 }
+              , { global = to_3 }
+              , { global = to_4 }
+              , { global = to_5 } )
             =
             to_
           in
@@ -1205,11 +1220,11 @@ module Tuple5 = struct
 
       let apply_exn apply1_exn apply2_exn apply3_exn apply4_exn apply5_exn derived_on diff
         =
-        let ( { Gel.g = derived_on1 }
-            , { Gel.g = derived_on2 }
-            , { Gel.g = derived_on3 }
-            , { Gel.g = derived_on4 }
-            , { Gel.g = derived_on5 } )
+        let ( { global = derived_on1 }
+            , { global = derived_on2 }
+            , { global = derived_on3 }
+            , { global = derived_on4 }
+            , { global = derived_on5 } )
           =
           derived_on
         in
@@ -1240,7 +1255,11 @@ module Tuple5 = struct
         in
         match diff with
         | [] ->
-          { Gel.g = t1 }, { Gel.g = t2 }, { Gel.g = t3 }, { Gel.g = t4 }, { Gel.g = t5 }
+          ( { global = t1 }
+          , { global = t2 }
+          , { global = t3 }
+          , { global = t4 }
+          , { global = t5 } )
         | _ :: _ -> failwith "BUG: non-empty diff after apply"
       ;;
 
@@ -1295,19 +1314,19 @@ module Tuple6 = struct
          , 'a6_diff)
          t =
       ( 'a1
-      , 'a2
-      , 'a3
-      , 'a4
-      , 'a5
-      , 'a6
-      , 'a1_diff
-      , 'a2_diff
-      , 'a3_diff
-      , 'a4_diff
-      , 'a5_diff
-      , 'a6_diff )
-      Entry_diff.t
-      list
+        , 'a2
+        , 'a3
+        , 'a4
+        , 'a5
+        , 'a6
+        , 'a1_diff
+        , 'a2_diff
+        , 'a3_diff
+        , 'a4_diff
+        , 'a5_diff
+        , 'a6_diff )
+        Entry_diff.t
+        list
     [@@deriving sexp, bin_io, quickcheck]
 
     let compare_rank t1 t2 =
@@ -1632,7 +1651,12 @@ module Tuple6 = struct
 
   module For_inlined_tuple = struct
     type ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) t =
-      'a1 Gel.t * 'a2 Gel.t * 'a3 Gel.t * 'a4 Gel.t * 'a5 Gel.t * 'a6 Gel.t
+      'a1 Modes.Global.t
+      * 'a2 Modes.Global.t
+      * 'a3 Modes.Global.t
+      * 'a4 Modes.Global.t
+      * 'a5 Modes.Global.t
+      * 'a6 Modes.Global.t
     [@@deriving sexp, bin_io]
 
     module Diff = struct
@@ -1652,18 +1676,18 @@ module Tuple6 = struct
            , 'a6_diff)
            t =
         ( 'a1
-        , 'a2
-        , 'a3
-        , 'a4
-        , 'a5
-        , 'a6
-        , 'a1_diff
-        , 'a2_diff
-        , 'a3_diff
-        , 'a4_diff
-        , 'a5_diff
-        , 'a6_diff )
-        Diff.t
+          , 'a2
+          , 'a3
+          , 'a4
+          , 'a5
+          , 'a6
+          , 'a1_diff
+          , 'a2_diff
+          , 'a3_diff
+          , 'a4_diff
+          , 'a5_diff
+          , 'a6_diff )
+          Diff.t
       [@@deriving sexp, bin_io, quickcheck]
 
       open Diff
@@ -1673,21 +1697,21 @@ module Tuple6 = struct
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
-          let ( { Gel.g = from_1 }
-              , { Gel.g = from_2 }
-              , { Gel.g = from_3 }
-              , { Gel.g = from_4 }
-              , { Gel.g = from_5 }
-              , { Gel.g = from_6 } )
+          let ( { global = from_1 }
+              , { global = from_2 }
+              , { global = from_3 }
+              , { global = from_4 }
+              , { global = from_5 }
+              , { global = from_6 } )
             =
             from
           in
-          let ( { Gel.g = to_1 }
-              , { Gel.g = to_2 }
-              , { Gel.g = to_3 }
-              , { Gel.g = to_4 }
-              , { Gel.g = to_5 }
-              , { Gel.g = to_6 } )
+          let ( { global = to_1 }
+              , { global = to_2 }
+              , { global = to_3 }
+              , { global = to_4 }
+              , { global = to_5 }
+              , { global = to_6 } )
             =
             to_
           in
@@ -1737,12 +1761,12 @@ module Tuple6 = struct
         derived_on
         diff
         =
-        let ( { Gel.g = derived_on1 }
-            , { Gel.g = derived_on2 }
-            , { Gel.g = derived_on3 }
-            , { Gel.g = derived_on4 }
-            , { Gel.g = derived_on5 }
-            , { Gel.g = derived_on6 } )
+        let ( { global = derived_on1 }
+            , { global = derived_on2 }
+            , { global = derived_on3 }
+            , { global = derived_on4 }
+            , { global = derived_on5 }
+            , { global = derived_on6 } )
           =
           derived_on
         in
@@ -1778,12 +1802,12 @@ module Tuple6 = struct
         in
         match diff with
         | [] ->
-          ( { Gel.g = t1 }
-          , { Gel.g = t2 }
-          , { Gel.g = t3 }
-          , { Gel.g = t4 }
-          , { Gel.g = t5 }
-          , { Gel.g = t6 } )
+          ( { global = t1 }
+          , { global = t2 }
+          , { global = t3 }
+          , { global = t4 }
+          , { global = t5 }
+          , { global = t6 } )
         | _ :: _ -> failwith "BUG: non-empty diff after apply"
       ;;
 

@@ -331,8 +331,8 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
                   `optional_diff
                   ~args_are_optional:false
                   ~row_diff:(fun row_name ->
-                  let name = create_arg_name row_name in
-                  [%expr [%e Text name |> e] [%e variants name]])]
+                    let name = create_arg_name row_name in
+                    [%expr [%e Text name |> e] [%e variants name]])]
             ;;]
         in
         let t_of_sexp =

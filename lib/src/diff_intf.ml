@@ -50,8 +50,8 @@ module type S1 = sig
 
   include
     S1_plain
-      with type 'a derived_on := 'a derived_on
-       and type ('a, 'a_diff) t := ('a, 'a_diff) t
+    with type 'a derived_on := 'a derived_on
+     and type ('a, 'a_diff) t := ('a, 'a_diff) t
 end
 
 module type S2_plain = sig
@@ -87,6 +87,6 @@ module type S2 = sig
 
   include
     S2_plain
-      with type ('a, 'b) derived_on := ('a, 'b) derived_on
-       and type ('a, 'b, 'a_diff, 'b_diff) t := ('a, 'b, 'a_diff, 'b_diff) t
+    with type ('a, 'b) derived_on := ('a, 'b) derived_on
+     and type ('a, 'b, 'a_diff, 'b_diff) t := ('a, 'b, 'a_diff, 'b_diff) t
 end

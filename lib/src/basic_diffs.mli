@@ -27,6 +27,6 @@ module Diff_of_option : sig
 
   include
     Diff_intf.S1
-      with type 'a derived_on := 'a derived_on
-       and type ('a, 'a_diff) t := ('a, 'a_diff) t
+    with type 'a derived_on := 'a derived_on
+     and type ('a, 'a_diff) t := ('a, 'a_diff) t
 end

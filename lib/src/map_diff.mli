@@ -32,19 +32,19 @@ module Stable : sig
       -> ('k, 'v, 'v_diff) t Optional_diff.t
 
     module Make (M : sig
-      module Key : sig
-        type t
-        type comparator_witness
-      end
+        module Key : sig
+          type t
+          type comparator_witness
+        end
 
-      type 'v t = (Key.t, 'v, Key.comparator_witness) Map.t
-    end) :
+        type 'v t = (Key.t, 'v, Key.comparator_witness) Map.t
+      end) :
       Diff_intf.S1_plain
-        with type 'v derived_on := 'v M.t
-         and type ('v, 'v_diff) t := (M.Key.t, 'v, 'v_diff) t
+      with type 'v derived_on := 'v M.t
+       and type ('v, 'v_diff) t := (M.Key.t, 'v, 'v_diff) t
   end
 end
 
 include
   module type of Stable.V1
-    with type ('k, 'v, 'v_diff) Change.t = ('k, 'v, 'v_diff) Stable.V1.Change.t
+  with type ('k, 'v, 'v_diff) Change.t = ('k, 'v, 'v_diff) Stable.V1.Change.t

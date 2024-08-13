@@ -61,9 +61,10 @@ let create_functions kind ~atomic ~sig_or_struct ~builder =
   let apply_exn = [%expr fun _derived_on diff -> diff] in
   let of_list_exn =
     [%expr
-      function
-      | [] -> Optional_diff.none
-      | _ :: _ as l -> Optional_diff.return (Base.List.last_exn l)]
+      fun l ->
+        match l with
+        | [] -> Optional_diff.none
+        | _ :: _ -> Optional_diff.return (Base.List.last_exn l)]
   in
   { Diff.Functions.get; apply_exn; of_list_exn }
 ;;

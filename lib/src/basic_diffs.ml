@@ -9,8 +9,8 @@ module type S_with_quickcheck = sig
 end
 
 module Make_atomic_with_quickcheck (M : sig
-  type t [@@deriving sexp, bin_io, equal, quickcheck]
-end) =
+    type t [@@deriving sexp, bin_io, equal, quickcheck]
+  end) =
 struct
   include Atomic.Make_diff (M)
 
@@ -18,35 +18,35 @@ struct
 end
 
 module Diff_of_bool = Make_atomic_with_quickcheck (struct
-  type t = bool [@@deriving sexp, bin_io, equal, quickcheck]
-end)
+    type t = bool [@@deriving sexp, bin_io, equal, quickcheck]
+  end)
 
 module Diff_of_char = Make_atomic_with_quickcheck (struct
-  type t = char [@@deriving sexp, bin_io, equal, quickcheck]
-end)
+    type t = char [@@deriving sexp, bin_io, equal, quickcheck]
+  end)
 
 module Diff_of_float = Make_atomic_with_quickcheck (struct
-  type t = float [@@deriving sexp, bin_io, compare, quickcheck]
+    type t = float [@@deriving sexp, bin_io, compare, quickcheck]
 
-  (* Overriding [equal], because
+    (* Overriding [equal], because
        - [Float.equal Float.nan Float.nan = false]
        - [Float.compare Float.nan Float.nan = 0]
          The latter makes more sense for diffs
     *)
-  let equal = [%compare.equal: t]
-end)
+    let equal = [%compare.equal: t]
+  end)
 
 module Diff_of_int = Make_atomic_with_quickcheck (struct
-  type t = int [@@deriving sexp, bin_io, equal, quickcheck]
-end)
+    type t = int [@@deriving sexp, bin_io, equal, quickcheck]
+  end)
 
 module Diff_of_string = Make_atomic_with_quickcheck (struct
-  type t = string [@@deriving sexp, bin_io, equal, quickcheck]
-end)
+    type t = string [@@deriving sexp, bin_io, equal, quickcheck]
+  end)
 
 module Diff_of_unit = Make_atomic_with_quickcheck (struct
-  type t = unit [@@deriving sexp, bin_io, equal, quickcheck]
-end)
+    type t = unit [@@deriving sexp, bin_io, equal, quickcheck]
+  end)
 
 module Diff_of_option = struct
   type 'a derived_on = 'a option [@@deriving sexp, bin_io]
@@ -88,8 +88,8 @@ module Diff_of_option = struct
       let trailing_diffs_rev, rest_rev =
         List.rev l
         |> List.split_while ~f:(function
-             | Diff_some _ -> true
-             | Set_to_some _ | Set_to_none -> false)
+          | Diff_some _ -> true
+          | Set_to_some _ | Set_to_none -> false)
       in
       let a_diffs =
         List.rev_map trailing_diffs_rev ~f:(function

@@ -9,7 +9,7 @@ let nums ~size = List.init size ~f:(( + ) 1)
 let var i = sprintf "'a%i" i
 let diff_var i = var i ^ "_diff"
 let create_arg i = sprintf "t%i" i
-let gel i = sprintf "%s Gel.t" (var i)
+let gel i = sprintf "%s Modes.Global.t" (var i)
 let vars ~size = List.map (nums ~size) ~f:var
 let diff_vars ~size = vars ~size @ List.map (nums ~size) ~f:diff_var
 
@@ -152,7 +152,7 @@ let tuple_ml size =
   let of_list = sprintf "of_list%i_exn" in
   let maybe_gel s i ~gel =
     let base = sprintf "%s%i" s i in
-    if not gel then base else sprintf "{Gel.g = %s}" base
+    if not gel then base else sprintf "{global = %s}" base
   in
   let from = maybe_gel "from_" in
   let to_ = maybe_gel "to_" in
@@ -203,7 +203,8 @@ let tuple_ml size =
                | Some d -> %{variant_name i} d :: diff
             |}]
       in
-      [%string {|let diff =
+      [%string
+        {|let diff =
             %{maybe_add i}
           in
         |}]
@@ -231,29 +232,31 @@ let tuple_ml size =
          |}]
   in
   let function_implementations ~local =
-    let maybe_local = if local then "local_ " else "" in
+    let maybe_exclave = if local then "exclave_ " else "" in
     let gel = local in
     [%string
       {|
         let get %{List.map nums ~f:get |> String.concat ~sep:" "} ~from ~to_ =
+          exclave_
           if Base.phys_equal from to_
-          then local_ Optional_diff.none
+          then Optional_diff.none
           else (
             let %{List.map nums ~f:(from ~gel) |> String.concat ~sep:", "} = from in
             let %{List.map nums ~f:(to_ ~gel) |> String.concat ~sep:", "} = to_ in
             let diff = [] in
             %{List.rev_map nums ~f:get_diff |> String.concat ~sep:""}
             match diff with
-            | [] -> local_ Optional_diff.none
-            | _ :: _ -> local_ Optional_diff.return diff)
+            | [] -> Optional_diff.none
+            | _ :: _ -> Optional_diff.return diff)
 
 
         let apply_exn %{List.map nums ~f:apply |> String.concat ~sep:" "} derived_on diff =
+          %{maybe_exclave}
           let %{List.map nums ~f:(derived_on ~gel) |> String.concat ~sep:", "} = derived_on in
           %{List.map nums ~f:apply_diff |> String.concat  ~sep:""}
           match diff with
-          | [] -> %{maybe_local}%{List.map nums ~f:(t ~gel) |> String.concat ~sep:","}
-          | _ :: _ -> %{maybe_local}failwith "BUG: non-empty diff after apply"
+          | [] -> %{List.map nums ~f:(t ~gel) |> String.concat ~sep:","}
+          | _ :: _ -> failwith "BUG: non-empty diff after apply"
         |}]
   in
   let of_list_and_apply_functions =
@@ -263,18 +266,18 @@ let tuple_ml size =
   let of_list_function =
     [%string
       {|
-      let of_list_exn %{of_list_and_apply_functions} ts =
+      let of_list_exn %{of_list_and_apply_functions} ts = exclave_
         match ts with
-        | [] -> local_ Optional_diff.none
+        | [] -> Optional_diff.none
         | _ :: _ ->
           match List.concat ts |> List.stable_sort ~compare:compare_rank with
-          | [] -> local_ Optional_diff.return []
+          | [] -> Optional_diff.return []
           | _ :: _ as diff ->
             let rec loop acc = function
               | [] -> List.rev acc
                %{List.map nums ~f:diff_of_list |> String.concat ~sep:"\n"}
             in
-            local_ Optional_diff.return (loop [] diff)
+            Optional_diff.return (loop [] diff)
          |}]
   in
   let create_arg_of_variant i =

@@ -1,8 +1,8 @@
 open Base
 
 module Make_base_diff (M : sig
-  type t [@@deriving equal]
-end) =
+    type t [@@deriving equal]
+  end) =
 struct
   let[@inline] get ~from ~to_ =
     if phys_equal from to_ || M.equal from to_
@@ -19,8 +19,8 @@ struct
 end
 
 module Make_diff_plain (M : sig
-  type t [@@deriving equal]
-end) =
+    type t [@@deriving equal]
+  end) =
 struct
   type derived_on = M.t
   type t = M.t [@@deriving equal]
@@ -29,8 +29,8 @@ struct
 end
 
 module Make_diff (M : sig
-  type t [@@deriving sexp, bin_io, equal]
-end) =
+    type t [@@deriving sexp, bin_io, equal]
+  end) =
 struct
   type derived_on = M.t
   type t = M.t [@@deriving sexp, bin_io, equal]
@@ -39,15 +39,15 @@ struct
 end
 
 module Make_plain (M : sig
-  type t [@@deriving equal]
-end) =
+    type t [@@deriving equal]
+  end) =
 struct
   module Diff = Make_diff_plain (M)
 end
 
 module Make (M : sig
-  type t [@@deriving equal, sexp, bin_io]
-end) =
+    type t [@@deriving equal, sexp, bin_io]
+  end) =
 struct
   module Diff = Make_diff (M)
 end

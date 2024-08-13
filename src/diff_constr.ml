@@ -31,8 +31,8 @@ let create
   let module_ =
     Longident_helper.to_simple_list module_ ~builder ~on_functor_application:(fun _ ->
       Error.createf
-        "Functor applications are not supported (with the exception of \"set\" for \
-         elements and \"map\" for keys)")
+        "Functor applications are not supported (with the exception of sets and maps \
+         using the [@diff.set] and [@diff.map] annotations)")
     @ [ Module_name.diff_module_name ~type_to_diff_name:type_name ]
   in
   (* (type1, type2, 'a, Diff_of_type1.t, Diff_of_type2.t, 'a_diff) X.Diff.t *)
