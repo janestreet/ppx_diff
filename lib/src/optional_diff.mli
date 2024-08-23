@@ -7,30 +7,30 @@ open! Base
 type 'a t
 
 val none : _ t
-val return : 'a -> 'a t
-val map : 'a t -> f:('a -> 'b) -> 'b t
-val bind : 'a t -> f:('a -> 'b t) -> 'b t
+val return : 'a -> local_ 'a t
+val map : local_ 'a t -> f:local_ ('a -> 'b) -> local_ 'b t
+val bind : local_ 'a t -> f:local_ ('a -> local_ 'b t) -> local_ 'b t
 val both : [ `both_would_allocate__use_bind_instead ]
-val ( >>| ) : 'a t -> ('a -> 'b) -> 'b t
-val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
-val is_none : 'a t -> bool
-val unsafe_value : 'a t -> 'a
-val to_option : 'a t -> 'a option
+val ( >>| ) : local_ 'a t -> local_ ('a -> 'b) -> local_ 'b t
+val ( >>= ) : local_ 'a t -> local_ ('a -> local_ 'b t) -> local_ 'b t
+val is_none : local_ 'a t -> bool
+val unsafe_value : local_ 'a t -> 'a
+val to_option : local_ 'a t -> 'a option
 
 module Optional_syntax : sig
   module Optional_syntax : sig
-    val is_none : 'a t -> bool
-    val unsafe_value : 'a t -> 'a
+    val is_none : local_ 'a t -> bool
+    val unsafe_value : local_ 'a t -> 'a
   end
 end
 
 module Let_syntax : sig
-  val return : 'a -> 'a t
+  val return : 'a -> local_ 'a t
 
   module Let_syntax : sig
-    val return : 'a -> 'a t
-    val map : 'a t -> f:('a -> 'b) -> 'b t
-    val bind : 'a t -> f:('a -> 'b t) -> 'b t
+    val return : 'a -> local_ 'a t
+    val map : local_ 'a t -> f:local_ ('a -> 'b) -> local_ 'b t
+    val bind : local_ 'a t -> f:local_ ('a -> local_ 'b t) -> local_ 'b t
     val both : [ `both_would_allocate__use_bind_instead ]
 
     module Open_on_rhs : sig end

@@ -10,9 +10,9 @@ module Stable : sig
 
     type 'a t = 'a Change.t list [@@deriving sexp, bin_io]
 
-    val get : from:('a, 'cmp) Set.t -> to_:('a, 'cmp) Set.t -> 'a t Optional_diff.t
+    val get : from:('a, 'cmp) Set.t -> to_:('a, 'cmp) Set.t -> local_ 'a t Optional_diff.t
     val apply_exn : ('a, 'cmp) Set.t -> 'a t -> ('a, 'cmp) Set.t
-    val of_list_exn : 'a t list -> 'a t Optional_diff.t
+    val of_list_exn : 'a t list -> local_ 'a t Optional_diff.t
 
     module Make (S : sig
         module Elt : sig

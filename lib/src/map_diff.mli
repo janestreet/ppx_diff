@@ -14,10 +14,10 @@ module Stable : sig
     [@@deriving sexp, bin_io, stable_witness]
 
     val get
-      :  (from:'v -> to_:'v -> 'v_diff Optional_diff.t)
+      :  (from:'v -> to_:'v -> local_ 'v_diff Optional_diff.t)
       -> from:('k, 'v, 'cmp) Map.t
       -> to_:('k, 'v, 'cmp) Map.t
-      -> ('k, 'v, 'v_diff) t Optional_diff.t
+      -> local_ ('k, 'v, 'v_diff) t Optional_diff.t
 
     val apply_exn
       :  ('v -> 'v_diff -> 'v)
@@ -26,10 +26,10 @@ module Stable : sig
       -> ('k, 'v, 'cmp) Map.t
 
     val of_list_exn
-      :  ('v_diff list -> 'v_diff Optional_diff.t)
+      :  ('v_diff list -> local_ 'v_diff Optional_diff.t)
       -> ('v -> 'v_diff -> 'v)
       -> ('k, 'v, 'v_diff) t list
-      -> ('k, 'v, 'v_diff) t Optional_diff.t
+      -> local_ ('k, 'v, 'v_diff) t Optional_diff.t
 
     module Make (M : sig
         module Key : sig

@@ -1,37 +1,37 @@
 module Diff = struct
-  type 'a t = { diff : 'a } [@@unboxed]
+  type 'a t = { global_ diff : 'a } [@@unboxed]
 end
 
 type 'a t = 'a Diff.t option
 
 let none = None
-let[@inline] return diff = Some { Diff.diff }
+let[@inline] return diff = exclave_ Some { Diff.diff }
 
-let[@inline] map t ~f =
+let[@inline] map t ~f = exclave_
   match t with
   | Some { Diff.diff } -> Some { Diff.diff = (f [@inlined hint]) diff }
   | None -> None
 ;;
 
-let[@inline] bind t ~f =
+let[@inline] bind t ~f = exclave_
   match t with
   | Some { Diff.diff } -> (f [@inlined hint]) diff
   | None -> None
 ;;
 
 let both = `both_would_allocate__use_bind_instead
-let[@inline] ( >>| ) x f = map x ~f
-let[@inline] ( >>= ) x f = bind x ~f
+let[@inline] ( >>| ) x f = exclave_ map x ~f
+let[@inline] ( >>= ) x f = exclave_ bind x ~f
 
 module Optional_syntax = struct
   module Optional_syntax = struct
-    let[@inline] is_none t =
+    let[@inline] is_none (local_ t) =
       match t with
       | None -> true
       | Some _ -> false
     ;;
 
-    let[@inline] unsafe_value t =
+    let[@inline] unsafe_value (local_ t) =
       match t with
       | Some { Diff.diff } -> diff
       | None -> failwith "[Optional_diff.unsafe_value] called on [Optional_diff.none]"
@@ -41,7 +41,7 @@ end
 
 include Optional_syntax.Optional_syntax
 
-let[@inline] to_option t =
+let[@inline] to_option (local_ t) =
   match t with
   | None -> None
   | Some { Diff.diff } -> Some diff

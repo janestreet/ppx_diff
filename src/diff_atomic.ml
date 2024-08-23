@@ -53,7 +53,7 @@ let create_functions kind ~atomic ~sig_or_struct ~builder =
   in
   let get =
     [%expr
-      fun ~from ~to_ ->
+      fun ~from ~to_ -> exclave_
         if Core.phys_equal from to_ || [%e equal] from to_
         then Optional_diff.none
         else Optional_diff.return to_]
@@ -61,7 +61,7 @@ let create_functions kind ~atomic ~sig_or_struct ~builder =
   let apply_exn = [%expr fun _derived_on diff -> diff] in
   let of_list_exn =
     [%expr
-      fun l ->
+      fun l -> exclave_
         match l with
         | [] -> Optional_diff.none
         | _ :: _ -> Optional_diff.return (Base.List.last_exn l)]

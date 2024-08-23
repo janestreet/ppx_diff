@@ -7,7 +7,8 @@ module Modes = struct
     include Modes.Global
 
     (* This is normally derived in Core, which depends on Diffable. *)
-    type 'a t = 'a Modes.Global.t = { global : 'a } [@@unboxed] [@@deriving bin_io]
+    type 'a t = 'a Modes.Global.t = { global_ global : 'a }
+    [@@unboxed] [@@deriving bin_io]
   end
 end
 
@@ -44,7 +45,7 @@ module Tuple2 = struct
       Int.equal (Entry_diff.Variants.to_rank t1) (Entry_diff.Variants.to_rank t2)
     ;;
 
-    let get get1 get2 ~from ~to_ =
+    let get get1 get2 ~from ~to_ = exclave_
       if Base.phys_equal from to_
       then Optional_diff.none
       else (
@@ -83,7 +84,7 @@ module Tuple2 = struct
       | _ :: _ -> failwith "BUG: non-empty diff after apply"
     ;;
 
-    let of_list_exn of_list1_exn _apply1_exn of_list2_exn _apply2_exn ts =
+    let of_list_exn of_list1_exn _apply1_exn of_list2_exn _apply2_exn ts = exclave_
       match ts with
       | [] -> Optional_diff.none
       | _ :: _ ->
@@ -180,7 +181,7 @@ module Tuple2 = struct
       open Diff
       open Entry_diff
 
-      let get get1 get2 ~from ~to_ =
+      let get get1 get2 ~from ~to_ = exclave_
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
@@ -202,7 +203,7 @@ module Tuple2 = struct
           | _ :: _ -> Optional_diff.return diff)
       ;;
 
-      let apply_exn apply1_exn apply2_exn derived_on diff =
+      let apply_exn apply1_exn apply2_exn derived_on diff = exclave_
         let { global = derived_on1 }, { global = derived_on2 } = derived_on in
         let t1, diff =
           match diff with
@@ -252,7 +253,7 @@ module Tuple3 = struct
       Int.equal (Entry_diff.Variants.to_rank t1) (Entry_diff.Variants.to_rank t2)
     ;;
 
-    let get get1 get2 get3 ~from ~to_ =
+    let get get1 get2 get3 ~from ~to_ = exclave_
       if Base.phys_equal from to_
       then Optional_diff.none
       else (
@@ -309,7 +310,7 @@ module Tuple3 = struct
       of_list3_exn
       _apply3_exn
       ts
-      =
+      = exclave_
       match ts with
       | [] -> Optional_diff.none
       | _ :: _ ->
@@ -447,7 +448,7 @@ module Tuple3 = struct
       open Diff
       open Entry_diff
 
-      let get get1 get2 get3 ~from ~to_ =
+      let get get1 get2 get3 ~from ~to_ = exclave_
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
@@ -474,7 +475,7 @@ module Tuple3 = struct
           | _ :: _ -> Optional_diff.return diff)
       ;;
 
-      let apply_exn apply1_exn apply2_exn apply3_exn derived_on diff =
+      let apply_exn apply1_exn apply2_exn apply3_exn derived_on diff = exclave_
         let { global = derived_on1 }, { global = derived_on2 }, { global = derived_on3 } =
           derived_on
         in
@@ -532,7 +533,7 @@ module Tuple4 = struct
       Int.equal (Entry_diff.Variants.to_rank t1) (Entry_diff.Variants.to_rank t2)
     ;;
 
-    let get get1 get2 get3 get4 ~from ~to_ =
+    let get get1 get2 get3 get4 ~from ~to_ = exclave_
       if Base.phys_equal from to_
       then Optional_diff.none
       else (
@@ -601,7 +602,7 @@ module Tuple4 = struct
       of_list4_exn
       _apply4_exn
       ts
-      =
+      = exclave_
       match ts with
       | [] -> Optional_diff.none
       | _ :: _ ->
@@ -768,7 +769,7 @@ module Tuple4 = struct
       open Diff
       open Entry_diff
 
-      let get get1 get2 get3 get4 ~from ~to_ =
+      let get get1 get2 get3 get4 ~from ~to_ = exclave_
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
@@ -808,7 +809,7 @@ module Tuple4 = struct
           | _ :: _ -> Optional_diff.return diff)
       ;;
 
-      let apply_exn apply1_exn apply2_exn apply3_exn apply4_exn derived_on diff =
+      let apply_exn apply1_exn apply2_exn apply3_exn apply4_exn derived_on diff = exclave_
         let ( { global = derived_on1 }
             , { global = derived_on2 }
             , { global = derived_on3 }
@@ -887,7 +888,7 @@ module Tuple5 = struct
       Int.equal (Entry_diff.Variants.to_rank t1) (Entry_diff.Variants.to_rank t2)
     ;;
 
-    let get get1 get2 get3 get4 get5 ~from ~to_ =
+    let get get1 get2 get3 get4 get5 ~from ~to_ = exclave_
       if Base.phys_equal from to_
       then Optional_diff.none
       else (
@@ -968,7 +969,7 @@ module Tuple5 = struct
       of_list5_exn
       _apply5_exn
       ts
-      =
+      = exclave_
       match ts with
       | [] -> Optional_diff.none
       | _ :: _ ->
@@ -1167,7 +1168,7 @@ module Tuple5 = struct
       open Diff
       open Entry_diff
 
-      let get get1 get2 get3 get4 get5 ~from ~to_ =
+      let get get1 get2 get3 get4 get5 ~from ~to_ = exclave_
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
@@ -1219,7 +1220,7 @@ module Tuple5 = struct
       ;;
 
       let apply_exn apply1_exn apply2_exn apply3_exn apply4_exn apply5_exn derived_on diff
-        =
+        = exclave_
         let ( { global = derived_on1 }
             , { global = derived_on2 }
             , { global = derived_on3 }
@@ -1337,7 +1338,7 @@ module Tuple6 = struct
       Int.equal (Entry_diff.Variants.to_rank t1) (Entry_diff.Variants.to_rank t2)
     ;;
 
-    let get get1 get2 get3 get4 get5 get6 ~from ~to_ =
+    let get get1 get2 get3 get4 get5 get6 ~from ~to_ = exclave_
       if Base.phys_equal from to_
       then Optional_diff.none
       else (
@@ -1441,7 +1442,7 @@ module Tuple6 = struct
       of_list6_exn
       _apply6_exn
       ts
-      =
+      = exclave_
       match ts with
       | [] -> Optional_diff.none
       | _ :: _ ->
@@ -1693,7 +1694,7 @@ module Tuple6 = struct
       open Diff
       open Entry_diff
 
-      let get get1 get2 get3 get4 get5 get6 ~from ~to_ =
+      let get get1 get2 get3 get4 get5 get6 ~from ~to_ = exclave_
         if Base.phys_equal from to_
         then Optional_diff.none
         else (
@@ -1760,7 +1761,7 @@ module Tuple6 = struct
         apply6_exn
         derived_on
         diff
-        =
+        = exclave_
         let ( { global = derived_on1 }
             , { global = derived_on2 }
             , { global = derived_on3 }

@@ -27,11 +27,11 @@ module Tuple2 : sig
     [@@deriving sexp, bin_io, quickcheck]
 
     val get
-      :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-      -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
+      :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+      -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
       -> from:('a1, 'a2) derived_on
       -> to_:('a1, 'a2) derived_on
-      -> ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
+      -> local_ ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
 
     val apply_exn
       :  ('a1 -> 'a1_diff -> 'a1)
@@ -41,12 +41,12 @@ module Tuple2 : sig
       -> ('a1, 'a2) derived_on
 
     val of_list_exn
-      :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+      :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
       -> ('a1 -> 'a1_diff -> 'a1)
-      -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+      -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
       -> ('a2 -> 'a2_diff -> 'a2)
       -> ('a1, 'a2, 'a1_diff, 'a2_diff) t list
-      -> ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
+      -> local_ ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
 
     val singleton
       :  ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t
@@ -55,8 +55,8 @@ module Tuple2 : sig
     val create : ?t1:'a1_diff -> ?t2:'a2_diff -> unit -> ('a1, 'a2, 'a1_diff, 'a2_diff) t
 
     val create_of_variants
-      :  t1:('a1_diff, ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t) Of_variant.t
-      -> t2:('a2_diff, ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t) Of_variant.t
+      :  t1:local_ ('a1_diff, ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t) Of_variant.t
+      -> t2:local_ ('a2_diff, ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t) Of_variant.t
       -> ('a1, 'a2, 'a1_diff, 'a2_diff) t
   end
 
@@ -70,26 +70,26 @@ module Tuple2 : sig
       [@@deriving sexp, bin_io, quickcheck]
 
       val get
-        :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-        -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-        -> from:('a1, 'a2) derived_on
-        -> to_:('a1, 'a2) derived_on
-        -> ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
+        :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+        -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+        -> from:local_ ('a1, 'a2) derived_on
+        -> to_:local_ ('a1, 'a2) derived_on
+        -> local_ ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
 
       val apply_exn
         :  ('a1 -> 'a1_diff -> 'a1)
         -> ('a2 -> 'a2_diff -> 'a2)
-        -> ('a1, 'a2) derived_on
+        -> local_ ('a1, 'a2) derived_on
         -> ('a1, 'a2, 'a1_diff, 'a2_diff) t
-        -> ('a1, 'a2) derived_on
+        -> local_ ('a1, 'a2) derived_on
 
       val of_list_exn
-        :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+        :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
         -> ('a1 -> 'a1_diff -> 'a1)
-        -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+        -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
         -> ('a2 -> 'a2_diff -> 'a2)
         -> ('a1, 'a2, 'a1_diff, 'a2_diff) t list
-        -> ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
+        -> local_ ('a1, 'a2, 'a1_diff, 'a2_diff) t Optional_diff.t
     end
   end
 end
@@ -114,12 +114,12 @@ module Tuple3 : sig
     [@@deriving sexp, bin_io, quickcheck]
 
     val get
-      :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-      -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-      -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
+      :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+      -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+      -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
       -> from:('a1, 'a2, 'a3) derived_on
       -> to_:('a1, 'a2, 'a3) derived_on
-      -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
+      -> local_ ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
 
     val apply_exn
       :  ('a1 -> 'a1_diff -> 'a1)
@@ -130,14 +130,14 @@ module Tuple3 : sig
       -> ('a1, 'a2, 'a3) derived_on
 
     val of_list_exn
-      :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+      :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
       -> ('a1 -> 'a1_diff -> 'a1)
-      -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+      -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
       -> ('a2 -> 'a2_diff -> 'a2)
-      -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+      -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
       -> ('a3 -> 'a3_diff -> 'a3)
       -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t list
-      -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
+      -> local_ ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
 
     val singleton
       :  ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t
@@ -152,17 +152,17 @@ module Tuple3 : sig
 
     val create_of_variants
       :  t1:
-           ( 'a1_diff
-             , ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a1_diff
+                    , ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t )
+                    Of_variant.t
       -> t2:
-           ( 'a2_diff
-             , ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a2_diff
+                    , ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t )
+                    Of_variant.t
       -> t3:
-           ( 'a3_diff
-             , ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a3_diff
+                    , ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t )
+                    Of_variant.t
       -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t
   end
 
@@ -178,30 +178,30 @@ module Tuple3 : sig
       [@@deriving sexp, bin_io, quickcheck]
 
       val get
-        :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-        -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-        -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
-        -> from:('a1, 'a2, 'a3) derived_on
-        -> to_:('a1, 'a2, 'a3) derived_on
-        -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
+        :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+        -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+        -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
+        -> from:local_ ('a1, 'a2, 'a3) derived_on
+        -> to_:local_ ('a1, 'a2, 'a3) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
 
       val apply_exn
         :  ('a1 -> 'a1_diff -> 'a1)
         -> ('a2 -> 'a2_diff -> 'a2)
         -> ('a3 -> 'a3_diff -> 'a3)
-        -> ('a1, 'a2, 'a3) derived_on
+        -> local_ ('a1, 'a2, 'a3) derived_on
         -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t
-        -> ('a1, 'a2, 'a3) derived_on
+        -> local_ ('a1, 'a2, 'a3) derived_on
 
       val of_list_exn
-        :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+        :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
         -> ('a1 -> 'a1_diff -> 'a1)
-        -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+        -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
         -> ('a2 -> 'a2_diff -> 'a2)
-        -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+        -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
         -> ('a3 -> 'a3_diff -> 'a3)
         -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t list
-        -> ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
+        -> local_ ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t Optional_diff.t
     end
   end
 end
@@ -227,13 +227,14 @@ module Tuple4 : sig
     [@@deriving sexp, bin_io, quickcheck]
 
     val get
-      :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-      -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-      -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
-      -> (from:'a4 -> to_:'a4 -> 'a4_diff Optional_diff.t)
+      :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+      -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+      -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
+      -> (from:'a4 -> to_:'a4 -> local_ 'a4_diff Optional_diff.t)
       -> from:('a1, 'a2, 'a3, 'a4) derived_on
       -> to_:('a1, 'a2, 'a3, 'a4) derived_on
-      -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t Optional_diff.t
+      -> local_ ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t
+                  Optional_diff.t
 
     val apply_exn
       :  ('a1 -> 'a1_diff -> 'a1)
@@ -245,16 +246,17 @@ module Tuple4 : sig
       -> ('a1, 'a2, 'a3, 'a4) derived_on
 
     val of_list_exn
-      :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+      :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
       -> ('a1 -> 'a1_diff -> 'a1)
-      -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+      -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
       -> ('a2 -> 'a2_diff -> 'a2)
-      -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+      -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
       -> ('a3 -> 'a3_diff -> 'a3)
-      -> ('a4_diff list -> 'a4_diff Optional_diff.t)
+      -> ('a4_diff list -> local_ 'a4_diff Optional_diff.t)
       -> ('a4 -> 'a4_diff -> 'a4)
       -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t list
-      -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t Optional_diff.t
+      -> local_ ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t
+                  Optional_diff.t
 
     val singleton
       :  ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Entry_diff.t
@@ -270,25 +272,53 @@ module Tuple4 : sig
 
     val create_of_variants
       :  t1:
-           ( 'a1_diff
-             , ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Entry_diff.t
-             )
-             Of_variant.t
+           local_ ( 'a1_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t2:
-           ( 'a2_diff
-             , ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Entry_diff.t
-             )
-             Of_variant.t
+           local_ ( 'a2_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t3:
-           ( 'a3_diff
-             , ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Entry_diff.t
-             )
-             Of_variant.t
+           local_ ( 'a3_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t4:
-           ( 'a4_diff
-             , ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Entry_diff.t
-             )
-             Of_variant.t
+           local_ ( 'a4_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t
   end
 
@@ -305,34 +335,36 @@ module Tuple4 : sig
       [@@deriving sexp, bin_io, quickcheck]
 
       val get
-        :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-        -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-        -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
-        -> (from:'a4 -> to_:'a4 -> 'a4_diff Optional_diff.t)
-        -> from:('a1, 'a2, 'a3, 'a4) derived_on
-        -> to_:('a1, 'a2, 'a3, 'a4) derived_on
-        -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t Optional_diff.t
+        :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+        -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+        -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
+        -> (from:'a4 -> to_:'a4 -> local_ 'a4_diff Optional_diff.t)
+        -> from:local_ ('a1, 'a2, 'a3, 'a4) derived_on
+        -> to_:local_ ('a1, 'a2, 'a3, 'a4) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t
+                    Optional_diff.t
 
       val apply_exn
         :  ('a1 -> 'a1_diff -> 'a1)
         -> ('a2 -> 'a2_diff -> 'a2)
         -> ('a3 -> 'a3_diff -> 'a3)
         -> ('a4 -> 'a4_diff -> 'a4)
-        -> ('a1, 'a2, 'a3, 'a4) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a4) derived_on
         -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t
-        -> ('a1, 'a2, 'a3, 'a4) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a4) derived_on
 
       val of_list_exn
-        :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+        :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
         -> ('a1 -> 'a1_diff -> 'a1)
-        -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+        -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
         -> ('a2 -> 'a2_diff -> 'a2)
-        -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+        -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
         -> ('a3 -> 'a3_diff -> 'a3)
-        -> ('a4_diff list -> 'a4_diff Optional_diff.t)
+        -> ('a4_diff list -> local_ 'a4_diff Optional_diff.t)
         -> ('a4 -> 'a4_diff -> 'a4)
         -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t list
-        -> ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t Optional_diff.t
+        -> local_ ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t
+                    Optional_diff.t
     end
   end
 end
@@ -370,15 +402,25 @@ module Tuple5 : sig
     [@@deriving sexp, bin_io, quickcheck]
 
     val get
-      :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-      -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-      -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
-      -> (from:'a4 -> to_:'a4 -> 'a4_diff Optional_diff.t)
-      -> (from:'a5 -> to_:'a5 -> 'a5_diff Optional_diff.t)
+      :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+      -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+      -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
+      -> (from:'a4 -> to_:'a4 -> local_ 'a4_diff Optional_diff.t)
+      -> (from:'a5 -> to_:'a5 -> local_ 'a5_diff Optional_diff.t)
       -> from:('a1, 'a2, 'a3, 'a4, 'a5) derived_on
       -> to_:('a1, 'a2, 'a3, 'a4, 'a5) derived_on
-      -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
-           Optional_diff.t
+      -> local_ ( 'a1
+                  , 'a2
+                  , 'a3
+                  , 'a4
+                  , 'a5
+                  , 'a1_diff
+                  , 'a2_diff
+                  , 'a3_diff
+                  , 'a4_diff
+                  , 'a5_diff )
+                  t
+                  Optional_diff.t
 
     val apply_exn
       :  ('a1 -> 'a1_diff -> 'a1)
@@ -391,20 +433,30 @@ module Tuple5 : sig
       -> ('a1, 'a2, 'a3, 'a4, 'a5) derived_on
 
     val of_list_exn
-      :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+      :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
       -> ('a1 -> 'a1_diff -> 'a1)
-      -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+      -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
       -> ('a2 -> 'a2_diff -> 'a2)
-      -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+      -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
       -> ('a3 -> 'a3_diff -> 'a3)
-      -> ('a4_diff list -> 'a4_diff Optional_diff.t)
+      -> ('a4_diff list -> local_ 'a4_diff Optional_diff.t)
       -> ('a4 -> 'a4_diff -> 'a4)
-      -> ('a5_diff list -> 'a5_diff Optional_diff.t)
+      -> ('a5_diff list -> local_ 'a5_diff Optional_diff.t)
       -> ('a5 -> 'a5_diff -> 'a5)
       -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
            list
-      -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
-           Optional_diff.t
+      -> local_ ( 'a1
+                  , 'a2
+                  , 'a3
+                  , 'a4
+                  , 'a5
+                  , 'a1_diff
+                  , 'a2_diff
+                  , 'a3_diff
+                  , 'a4_diff
+                  , 'a5_diff )
+                  t
+                  Optional_diff.t
 
     val singleton
       :  ( 'a1
@@ -431,75 +483,75 @@ module Tuple5 : sig
 
     val create_of_variants
       :  t1:
-           ( 'a1_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a1_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t2:
-           ( 'a2_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a2_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t3:
-           ( 'a3_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a3_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t4:
-           ( 'a4_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a4_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t5:
-           ( 'a5_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a5_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
   end
 
@@ -520,15 +572,25 @@ module Tuple5 : sig
       [@@deriving sexp, bin_io, quickcheck]
 
       val get
-        :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-        -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-        -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
-        -> (from:'a4 -> to_:'a4 -> 'a4_diff Optional_diff.t)
-        -> (from:'a5 -> to_:'a5 -> 'a5_diff Optional_diff.t)
-        -> from:('a1, 'a2, 'a3, 'a4, 'a5) derived_on
-        -> to_:('a1, 'a2, 'a3, 'a4, 'a5) derived_on
-        -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
-             Optional_diff.t
+        :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+        -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+        -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
+        -> (from:'a4 -> to_:'a4 -> local_ 'a4_diff Optional_diff.t)
+        -> (from:'a5 -> to_:'a5 -> local_ 'a5_diff Optional_diff.t)
+        -> from:local_ ('a1, 'a2, 'a3, 'a4, 'a5) derived_on
+        -> to_:local_ ('a1, 'a2, 'a3, 'a4, 'a5) derived_on
+        -> local_ ( 'a1
+                    , 'a2
+                    , 'a3
+                    , 'a4
+                    , 'a5
+                    , 'a1_diff
+                    , 'a2_diff
+                    , 'a3_diff
+                    , 'a4_diff
+                    , 'a5_diff )
+                    t
+                    Optional_diff.t
 
       val apply_exn
         :  ('a1 -> 'a1_diff -> 'a1)
@@ -536,25 +598,35 @@ module Tuple5 : sig
         -> ('a3 -> 'a3_diff -> 'a3)
         -> ('a4 -> 'a4_diff -> 'a4)
         -> ('a5 -> 'a5_diff -> 'a5)
-        -> ('a1, 'a2, 'a3, 'a4, 'a5) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a4, 'a5) derived_on
         -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
-        -> ('a1, 'a2, 'a3, 'a4, 'a5) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a4, 'a5) derived_on
 
       val of_list_exn
-        :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+        :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
         -> ('a1 -> 'a1_diff -> 'a1)
-        -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+        -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
         -> ('a2 -> 'a2_diff -> 'a2)
-        -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+        -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
         -> ('a3 -> 'a3_diff -> 'a3)
-        -> ('a4_diff list -> 'a4_diff Optional_diff.t)
+        -> ('a4_diff list -> local_ 'a4_diff Optional_diff.t)
         -> ('a4 -> 'a4_diff -> 'a4)
-        -> ('a5_diff list -> 'a5_diff Optional_diff.t)
+        -> ('a5_diff list -> local_ 'a5_diff Optional_diff.t)
         -> ('a5 -> 'a5_diff -> 'a5)
         -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
              list
-        -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t
-             Optional_diff.t
+        -> local_ ( 'a1
+                    , 'a2
+                    , 'a3
+                    , 'a4
+                    , 'a5
+                    , 'a1_diff
+                    , 'a2_diff
+                    , 'a3_diff
+                    , 'a4_diff
+                    , 'a5_diff )
+                    t
+                    Optional_diff.t
     end
   end
 end
@@ -620,28 +692,28 @@ module Tuple6 : sig
     [@@deriving sexp, bin_io, quickcheck]
 
     val get
-      :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-      -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-      -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
-      -> (from:'a4 -> to_:'a4 -> 'a4_diff Optional_diff.t)
-      -> (from:'a5 -> to_:'a5 -> 'a5_diff Optional_diff.t)
-      -> (from:'a6 -> to_:'a6 -> 'a6_diff Optional_diff.t)
+      :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+      -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+      -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
+      -> (from:'a4 -> to_:'a4 -> local_ 'a4_diff Optional_diff.t)
+      -> (from:'a5 -> to_:'a5 -> local_ 'a5_diff Optional_diff.t)
+      -> (from:'a6 -> to_:'a6 -> local_ 'a6_diff Optional_diff.t)
       -> from:('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
       -> to_:('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
-      -> ( 'a1
-           , 'a2
-           , 'a3
-           , 'a4
-           , 'a5
-           , 'a6
-           , 'a1_diff
-           , 'a2_diff
-           , 'a3_diff
-           , 'a4_diff
-           , 'a5_diff
-           , 'a6_diff )
-           t
-           Optional_diff.t
+      -> local_ ( 'a1
+                  , 'a2
+                  , 'a3
+                  , 'a4
+                  , 'a5
+                  , 'a6
+                  , 'a1_diff
+                  , 'a2_diff
+                  , 'a3_diff
+                  , 'a4_diff
+                  , 'a5_diff
+                  , 'a6_diff )
+                  t
+                  Optional_diff.t
 
     val apply_exn
       :  ('a1 -> 'a1_diff -> 'a1)
@@ -667,17 +739,17 @@ module Tuple6 : sig
       -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
 
     val of_list_exn
-      :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+      :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
       -> ('a1 -> 'a1_diff -> 'a1)
-      -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+      -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
       -> ('a2 -> 'a2_diff -> 'a2)
-      -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+      -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
       -> ('a3 -> 'a3_diff -> 'a3)
-      -> ('a4_diff list -> 'a4_diff Optional_diff.t)
+      -> ('a4_diff list -> local_ 'a4_diff Optional_diff.t)
       -> ('a4 -> 'a4_diff -> 'a4)
-      -> ('a5_diff list -> 'a5_diff Optional_diff.t)
+      -> ('a5_diff list -> local_ 'a5_diff Optional_diff.t)
       -> ('a5 -> 'a5_diff -> 'a5)
-      -> ('a6_diff list -> 'a6_diff Optional_diff.t)
+      -> ('a6_diff list -> local_ 'a6_diff Optional_diff.t)
       -> ('a6 -> 'a6_diff -> 'a6)
       -> ( 'a1
            , 'a2
@@ -693,20 +765,20 @@ module Tuple6 : sig
            , 'a6_diff )
            t
            list
-      -> ( 'a1
-           , 'a2
-           , 'a3
-           , 'a4
-           , 'a5
-           , 'a6
-           , 'a1_diff
-           , 'a2_diff
-           , 'a3_diff
-           , 'a4_diff
-           , 'a5_diff
-           , 'a6_diff )
-           t
-           Optional_diff.t
+      -> local_ ( 'a1
+                  , 'a2
+                  , 'a3
+                  , 'a4
+                  , 'a5
+                  , 'a6
+                  , 'a1_diff
+                  , 'a2_diff
+                  , 'a3_diff
+                  , 'a4_diff
+                  , 'a5_diff
+                  , 'a6_diff )
+                  t
+                  Optional_diff.t
 
     val singleton
       :  ( 'a1
@@ -760,101 +832,101 @@ module Tuple6 : sig
 
     val create_of_variants
       :  t1:
-           ( 'a1_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a6
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff
-                 , 'a6_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a1_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a6
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff
+                        , 'a6_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t2:
-           ( 'a2_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a6
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff
-                 , 'a6_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a2_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a6
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff
+                        , 'a6_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t3:
-           ( 'a3_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a6
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff
-                 , 'a6_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a3_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a6
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff
+                        , 'a6_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t4:
-           ( 'a4_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a6
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff
-                 , 'a6_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a4_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a6
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff
+                        , 'a6_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t5:
-           ( 'a5_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a6
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff
-                 , 'a6_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a5_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a6
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff
+                        , 'a6_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> t6:
-           ( 'a6_diff
-             , ( 'a1
-                 , 'a2
-                 , 'a3
-                 , 'a4
-                 , 'a5
-                 , 'a6
-                 , 'a1_diff
-                 , 'a2_diff
-                 , 'a3_diff
-                 , 'a4_diff
-                 , 'a5_diff
-                 , 'a6_diff )
-                 Entry_diff.t )
-             Of_variant.t
+           local_ ( 'a6_diff
+                    , ( 'a1
+                        , 'a2
+                        , 'a3
+                        , 'a4
+                        , 'a5
+                        , 'a6
+                        , 'a1_diff
+                        , 'a2_diff
+                        , 'a3_diff
+                        , 'a4_diff
+                        , 'a5_diff
+                        , 'a6_diff )
+                        Entry_diff.t )
+                    Of_variant.t
       -> ( 'a1
            , 'a2
            , 'a3
@@ -912,28 +984,28 @@ module Tuple6 : sig
       [@@deriving sexp, bin_io, quickcheck]
 
       val get
-        :  (from:'a1 -> to_:'a1 -> 'a1_diff Optional_diff.t)
-        -> (from:'a2 -> to_:'a2 -> 'a2_diff Optional_diff.t)
-        -> (from:'a3 -> to_:'a3 -> 'a3_diff Optional_diff.t)
-        -> (from:'a4 -> to_:'a4 -> 'a4_diff Optional_diff.t)
-        -> (from:'a5 -> to_:'a5 -> 'a5_diff Optional_diff.t)
-        -> (from:'a6 -> to_:'a6 -> 'a6_diff Optional_diff.t)
-        -> from:('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
-        -> to_:('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
-        -> ( 'a1
-             , 'a2
-             , 'a3
-             , 'a4
-             , 'a5
-             , 'a6
-             , 'a1_diff
-             , 'a2_diff
-             , 'a3_diff
-             , 'a4_diff
-             , 'a5_diff
-             , 'a6_diff )
-             t
-             Optional_diff.t
+        :  (from:'a1 -> to_:'a1 -> local_ 'a1_diff Optional_diff.t)
+        -> (from:'a2 -> to_:'a2 -> local_ 'a2_diff Optional_diff.t)
+        -> (from:'a3 -> to_:'a3 -> local_ 'a3_diff Optional_diff.t)
+        -> (from:'a4 -> to_:'a4 -> local_ 'a4_diff Optional_diff.t)
+        -> (from:'a5 -> to_:'a5 -> local_ 'a5_diff Optional_diff.t)
+        -> (from:'a6 -> to_:'a6 -> local_ 'a6_diff Optional_diff.t)
+        -> from:local_ ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
+        -> to_:local_ ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
+        -> local_ ( 'a1
+                    , 'a2
+                    , 'a3
+                    , 'a4
+                    , 'a5
+                    , 'a6
+                    , 'a1_diff
+                    , 'a2_diff
+                    , 'a3_diff
+                    , 'a4_diff
+                    , 'a5_diff
+                    , 'a6_diff )
+                    t
+                    Optional_diff.t
 
       val apply_exn
         :  ('a1 -> 'a1_diff -> 'a1)
@@ -942,7 +1014,7 @@ module Tuple6 : sig
         -> ('a4 -> 'a4_diff -> 'a4)
         -> ('a5 -> 'a5_diff -> 'a5)
         -> ('a6 -> 'a6_diff -> 'a6)
-        -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
         -> ( 'a1
              , 'a2
              , 'a3
@@ -956,20 +1028,20 @@ module Tuple6 : sig
              , 'a5_diff
              , 'a6_diff )
              t
-        -> ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
+        -> local_ ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on
 
       val of_list_exn
-        :  ('a1_diff list -> 'a1_diff Optional_diff.t)
+        :  ('a1_diff list -> local_ 'a1_diff Optional_diff.t)
         -> ('a1 -> 'a1_diff -> 'a1)
-        -> ('a2_diff list -> 'a2_diff Optional_diff.t)
+        -> ('a2_diff list -> local_ 'a2_diff Optional_diff.t)
         -> ('a2 -> 'a2_diff -> 'a2)
-        -> ('a3_diff list -> 'a3_diff Optional_diff.t)
+        -> ('a3_diff list -> local_ 'a3_diff Optional_diff.t)
         -> ('a3 -> 'a3_diff -> 'a3)
-        -> ('a4_diff list -> 'a4_diff Optional_diff.t)
+        -> ('a4_diff list -> local_ 'a4_diff Optional_diff.t)
         -> ('a4 -> 'a4_diff -> 'a4)
-        -> ('a5_diff list -> 'a5_diff Optional_diff.t)
+        -> ('a5_diff list -> local_ 'a5_diff Optional_diff.t)
         -> ('a5 -> 'a5_diff -> 'a5)
-        -> ('a6_diff list -> 'a6_diff Optional_diff.t)
+        -> ('a6_diff list -> local_ 'a6_diff Optional_diff.t)
         -> ('a6 -> 'a6_diff -> 'a6)
         -> ( 'a1
              , 'a2
@@ -985,20 +1057,20 @@ module Tuple6 : sig
              , 'a6_diff )
              t
              list
-        -> ( 'a1
-             , 'a2
-             , 'a3
-             , 'a4
-             , 'a5
-             , 'a6
-             , 'a1_diff
-             , 'a2_diff
-             , 'a3_diff
-             , 'a4_diff
-             , 'a5_diff
-             , 'a6_diff )
-             t
-             Optional_diff.t
+        -> local_ ( 'a1
+                    , 'a2
+                    , 'a3
+                    , 'a4
+                    , 'a5
+                    , 'a6
+                    , 'a1_diff
+                    , 'a2_diff
+                    , 'a3_diff
+                    , 'a4_diff
+                    , 'a5_diff
+                    , 'a6_diff )
+                    t
+                    Optional_diff.t
     end
   end
 end

@@ -118,7 +118,7 @@ let get ~field_diffs ~builder =
         [%e expr]])
     ~init:
       [%expr
-        fun ~from ~to_ ->
+        fun ~from ~to_ -> exclave_
           if Base.phys_equal from to_
           then Optional_diff.none
           else (
@@ -177,7 +177,7 @@ let apply ~field_diffs ~local_apply ~builder =
     List.map (Field_diffs.to_list field_diffs) ~f:(fun diff -> diff.Field_diff.field_name)
   in
   let open (val builder : Builder.S) in
-  let return_expr expr = if local_apply then [%expr [%e expr]] else expr in
+  let return_expr expr = if local_apply then [%expr exclave_ [%e expr]] else expr in
   let apply_field_diff ~field_name d =
     let txt = with_prefix ~field_name in
     [%expr
@@ -249,7 +249,7 @@ let of_list ~field_diffs ~builder =
     match field_diffs with
     | Field_diffs.Single { field_name; field_diff = _ } ->
       [%expr
-        fun ts ->
+        fun ts -> exclave_
           match
             Base.List.map ts ~f:(function [%p variant_row ~field_name "x" |> p] -> x)
           with
@@ -294,7 +294,7 @@ let of_list ~field_diffs ~builder =
               | Some d -> loop ([%e variant_row ~field_name "d" |> e] :: acc) tl]
       in
       [%expr
-        fun l ->
+        fun l -> exclave_
           match l with
           | [] -> Optional_diff.none
           | _ :: _ as ts ->

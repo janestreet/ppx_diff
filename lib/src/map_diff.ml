@@ -15,8 +15,12 @@ module Stable = struct
     type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list
     [@@deriving sexp, bin_io, stable_witness]
 
-    let get (type a a_diff) (get_a : from:a -> to_:a -> a_diff Optional_diff.t) ~from ~to_
-      =
+    let get
+      (type a a_diff)
+      (get_a : from:a -> to_:a -> local_ a_diff Optional_diff.t)
+      ~from
+      ~to_
+      = exclave_
       if phys_equal from to_
       then Optional_diff.none
       else (
@@ -48,8 +52,8 @@ module Stable = struct
     ;;
 
     let of_list_exn _ _ = function
-      | [] -> Optional_diff.none
-      | l -> Optional_diff.return (List.concat l)
+      | [] -> exclave_ Optional_diff.none
+      | l -> exclave_ Optional_diff.return (List.concat l)
     ;;
 
     module Make (M : sig

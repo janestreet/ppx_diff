@@ -79,7 +79,7 @@ let label_declarations record_fields ~builder =
       ~name:(Located.mk (Record_field_name.to_string field_name))
       ~type_:(core_to_ppx field_type ~builder)
       ~mutable_:(if mutable_ then Mutable else Immutable)
-      ~modality:(if global then Some Global else None))
+      ~modalities:(if global then [ Modality "global" ] else []))
 ;;
 
 let to_ppx_kind t ~builder =
@@ -330,11 +330,11 @@ let core_of_ppx = create_core
 let create_record fields ~builder =
   let open (val builder : Builder.S) in
   List.map fields ~f:(fun (field : label_declaration) ->
-    let modality, field = get_label_declaration_modality field in
+    let modalities, field = get_label_declaration_modalities field in
     let global =
-      match modality with
-      | Some Global -> true
-      | None -> false
+      List.exists modalities ~f:(function
+        | Modality "global" -> true
+        | Modality _ -> false)
     in
     let { pld_name; pld_mutable; pld_type; pld_loc = _; pld_attributes = _; _ } = field in
     let field_type =

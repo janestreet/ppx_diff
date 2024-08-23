@@ -553,7 +553,7 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
           [%e expr]])
     ~init:
       [%expr
-        fun ~from ~to_ ->
+        fun ~from ~to_ -> exclave_
           if Base.phys_equal from to_
           then Optional_diff.none
           else
@@ -804,13 +804,13 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
     then
       (* All diffs are of the [Set_to] variant, so just pick the last one *)
       [%expr
-        fun l ->
+        fun l -> exclave_
           match l with
           | [] -> Optional_diff.none
           | _ :: _ -> Optional_diff.return (Base.List.last_exn l)]
     else
       [%expr
-        fun l ->
+        fun l -> exclave_
           match l with
           | [] -> Optional_diff.none
           | [ hd ] -> Optional_diff.return hd

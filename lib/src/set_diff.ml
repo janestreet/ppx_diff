@@ -12,7 +12,7 @@ module Stable = struct
 
     type 'a t = 'a Change.t list [@@deriving sexp, bin_io]
 
-    let get ~from ~to_ =
+    let get ~from ~to_ = exclave_
       if phys_equal from to_
       then Optional_diff.none
       else (
@@ -34,8 +34,8 @@ module Stable = struct
     ;;
 
     let of_list_exn = function
-      | [] -> Optional_diff.none
-      | _ :: _ as l -> Optional_diff.return (List.concat l)
+      | [] -> exclave_ Optional_diff.none
+      | _ :: _ as l -> exclave_ Optional_diff.return (List.concat l)
     ;;
 
     module Make (S : sig

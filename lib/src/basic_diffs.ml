@@ -57,7 +57,7 @@ module Diff_of_option = struct
     | Diff_some of 'a_diff
   [@@deriving sexp, bin_io, quickcheck]
 
-  let get get_a ~from ~to_ =
+  let get get_a ~from ~to_ = exclave_
     if phys_equal from to_
     then Optional_diff.none
     else (
@@ -80,7 +80,7 @@ module Diff_of_option = struct
           "Could not apply diff. Variant mismatch." ~derived_on:"None" ~diff:"Diff_some"]
   ;;
 
-  let of_list_exn of_list_exn_a apply_a_exn diffs =
+  let of_list_exn of_list_exn_a apply_a_exn diffs = exclave_
     match diffs with
     | [] -> Optional_diff.none
     | [ hd ] -> Optional_diff.return hd

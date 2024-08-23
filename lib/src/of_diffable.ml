@@ -13,7 +13,7 @@ module Make (Diffable : Diffable_intf.S) (M : Conv with type diffable = Diffable
 
     type derived_on = M.t
 
-    let get ~from ~to_ =
+    let get ~from ~to_ = exclave_
       (Diffable.Diff.get [@inlined hint])
         ~from:(M.to_diffable from)
         ~to_:(M.to_diffable to_)
@@ -23,6 +23,6 @@ module Make (Diffable : Diffable_intf.S) (M : Conv with type diffable = Diffable
       (Diffable.Diff.apply_exn [@inlined hint]) (M.to_diffable t) diff |> M.of_diffable
     ;;
 
-    let of_list_exn diffs = Diffable.Diff.of_list_exn diffs
+    let of_list_exn diffs = exclave_ Diffable.Diff.of_list_exn diffs
   end
 end
