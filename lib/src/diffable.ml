@@ -6,6 +6,7 @@ module Optional_diff = Optional_diff
 module Tuples = Tuples
 module Set_diff = Set_diff
 module Map_diff = Map_diff
+module Of_diffable_plain = Of_diffable.Make_plain
 module Of_diffable = Of_diffable.Make
 
 module For_ppx = struct

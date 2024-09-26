@@ -79,7 +79,7 @@ let label_declarations record_fields ~builder =
       ~name:(Located.mk (Record_field_name.to_string field_name))
       ~type_:(core_to_ppx field_type ~builder)
       ~mutable_:(if mutable_ then Mutable else Immutable)
-      ~modality:(if global then Some Global else None))
+      ~modalities:(if global then [ Modality "global" ] else []))
 ;;
 
 let to_ppx_kind t ~builder =
@@ -254,7 +254,7 @@ let duplicate_how_to_diff how_to_diff1 how_to_diff2 ~builder =
 let rec create_core core_type ~builder : How_to_diff.t core =
   let how_to_diff = How_to_diff.Custom.of_core_type core_type ~builder in
   let kind : How_to_diff.t core_kind =
-    match core_type.ptyp_desc with
+    match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
     | Ptyp_var var -> Var (Var.of_string var)
     | Ptyp_tuple types -> Tuple (List.map types ~f:(create_core ~builder))
     | Ptyp_constr (id, core_types) ->
@@ -315,6 +315,7 @@ let rec create_core core_type ~builder : How_to_diff.t core =
              Variant_row_name.of_string variant_name, variant_type))
     | Ptyp_any -> not_supported builder "Ptyp_any"
     | Ptyp_arrow _ -> not_supported builder "Ptyp_arrow"
+    | Ptyp_unboxed_tuple _ -> not_supported builder "Ptyp_unboxed_tuple"
     | Ptyp_object _ -> not_supported builder "Ptyp_object"
     | Ptyp_class _ -> not_supported builder "Ptyp_class"
     | Ptyp_alias _ -> not_supported builder "Ptyp_alias"
@@ -330,11 +331,11 @@ let core_of_ppx = create_core
 let create_record fields ~builder =
   let open (val builder : Builder.S) in
   List.map fields ~f:(fun (field : label_declaration) ->
-    let modality, field = get_label_declaration_modality field in
+    let modalities, field = get_label_declaration_modalities field in
     let global =
-      match modality with
-      | Some Global -> true
-      | None -> false
+      List.exists modalities ~f:(function
+        | Modality "global" -> true
+        | Modality _ -> false)
     in
     let { pld_name; pld_mutable; pld_type; pld_loc = _; pld_attributes = _; _ } = field in
     let field_type =
