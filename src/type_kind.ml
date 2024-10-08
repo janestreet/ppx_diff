@@ -313,15 +313,8 @@ let rec create_core core_type ~builder : How_to_diff.t core =
                | _, _ :: _ :: _ -> not_supported builder "Multi-type polymorphic variant"
              in
              Variant_row_name.of_string variant_name, variant_type))
-    | Ptyp_any -> not_supported builder "Ptyp_any"
-    | Ptyp_arrow _ -> not_supported builder "Ptyp_arrow"
-    | Ptyp_unboxed_tuple _ -> not_supported builder "Ptyp_unboxed_tuple"
-    | Ptyp_object _ -> not_supported builder "Ptyp_object"
-    | Ptyp_class _ -> not_supported builder "Ptyp_class"
-    | Ptyp_alias _ -> not_supported builder "Ptyp_alias"
-    | Ptyp_poly _ -> not_supported builder "Ptyp_poly"
-    | Ptyp_package _ -> not_supported builder "Ptyp_package"
-    | Ptyp_extension _ -> not_supported builder "Ptyp_extension"
+    | desc ->
+      not_supported builder (Ppxlib_jane.Language_feature_name.of_core_type_desc desc)
   in
   kind, how_to_diff
 ;;
