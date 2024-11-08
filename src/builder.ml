@@ -46,7 +46,7 @@ let create (module M : Ast_builders) =
       match t with
       | Text "_" -> ppat_any
       | Text v -> ppat_var (Located.mk v)
-      | Tuple l -> ppat_tuple (List.map l ~f:pattern)
+      | Tuple l -> ppat_tuple (List.map l ~f:(fun p -> None, pattern p)) Closed
       | Record { module_; fields } ->
         ppat_record (record ~module_ ~fields ~f:pattern) Closed
       | Variant_row row ->
@@ -54,10 +54,12 @@ let create (module M : Ast_builders) =
       | Local_expr t -> pattern t
     ;;
 
+    let raise_error s = Location.raise_errorf ~loc "ppx_%s: %s" name_of_ppx s
+
     let rec expression t =
       match t with
       | Text s -> pexp_ident (Located.mk (Lident s))
-      | Tuple l -> pexp_tuple (List.map l ~f:expression)
+      | Tuple l -> pexp_tuple (List.map l ~f:(fun e -> None, expression e))
       | Record { module_; fields } ->
         pexp_record (record ~module_ ~fields ~f:expression) None
       | Variant_row row ->
@@ -67,7 +69,6 @@ let create (module M : Ast_builders) =
 
     let p = pattern
     let e = expression
-    let raise_error s = Location.raise_errorf ~loc "ppx_%s: %s" name_of_ppx s
   end
   in
   (module M : S)

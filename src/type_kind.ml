@@ -49,7 +49,7 @@ let rec core_to_ppx (core : unit core) ~builder =
   let open (val builder : Builder.S) in
   match core_kind with
   | Var v -> Var.core_type v ~builder
-  | Tuple l -> ptyp_tuple (List.map l ~f:(fun t -> core_to_ppx t ~builder))
+  | Tuple l -> ptyp_tuple (List.map l ~f:(fun t -> None, core_to_ppx t ~builder))
   | Constr { params; module_; type_name } ->
     let lident_helper =
       module_
@@ -254,9 +254,12 @@ let duplicate_how_to_diff how_to_diff1 how_to_diff2 ~builder =
 let rec create_core core_type ~builder : How_to_diff.t core =
   let how_to_diff = How_to_diff.Custom.of_core_type core_type ~builder in
   let kind : How_to_diff.t core_kind =
-    match core_type.ptyp_desc with
-    | Ptyp_var var -> Var (Var.of_string var)
-    | Ptyp_tuple types -> Tuple (List.map types ~f:(create_core ~builder))
+    match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
+    | Ptyp_var (var, _) -> Var (Var.of_string var)
+    | Ptyp_tuple labeled_types ->
+      (match Ppxlib_jane.as_unlabeled_tuple labeled_types with
+       | Some types -> Tuple (List.map types ~f:(create_core ~builder))
+       | None -> not_supported builder "Labeled tuples")
     | Ptyp_constr (id, core_types) ->
       let open (val builder : Builder.S) in
       let longident_helper = Longident_helper.of_longident id.txt ~builder in
@@ -313,14 +316,8 @@ let rec create_core core_type ~builder : How_to_diff.t core =
                | _, _ :: _ :: _ -> not_supported builder "Multi-type polymorphic variant"
              in
              Variant_row_name.of_string variant_name, variant_type))
-    | Ptyp_any -> not_supported builder "Ptyp_any"
-    | Ptyp_arrow _ -> not_supported builder "Ptyp_arrow"
-    | Ptyp_object _ -> not_supported builder "Ptyp_object"
-    | Ptyp_class _ -> not_supported builder "Ptyp_class"
-    | Ptyp_alias _ -> not_supported builder "Ptyp_alias"
-    | Ptyp_poly _ -> not_supported builder "Ptyp_poly"
-    | Ptyp_package _ -> not_supported builder "Ptyp_package"
-    | Ptyp_extension _ -> not_supported builder "Ptyp_extension"
+    | desc ->
+      not_supported builder (Ppxlib_jane.Language_feature_name.of_core_type_desc desc)
   in
   kind, how_to_diff
 ;;

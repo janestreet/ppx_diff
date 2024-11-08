@@ -21,7 +21,7 @@ let to_module (t : t) ~module_name ~builder : t =
   let open (val builder : Builder.S) in
   let { sig_items; struct_items } = t in
   let module_name = module_name |> Module_name.to_string |> Option.return |> Located.mk in
-  let module_type = sig_items |> pmty_signature in
+  let module_type = sig_items |> signature |> pmty_signature in
   let struct_items =
     Result.map struct_items ~f:(fun struct_items ->
       let module_expr = pmod_structure struct_items in
