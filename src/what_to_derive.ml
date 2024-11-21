@@ -51,9 +51,16 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
             match item.pstr_desc with
             | Pstr_eval (expr, []) ->
               let rec get (expr : expression) =
-                match expr.pexp_desc with
+                match
+                  Ppxlib_jane.Shim.Expression_desc.of_parsetree
+                    expr.pexp_desc
+                    ~loc:expr.pexp_loc
+                with
                 | Pexp_ident { txt = Lident d; _ } -> [ d ]
-                | Pexp_tuple list -> List.concat_map list ~f:get
+                | Pexp_tuple labeled_exps ->
+                  (match Ppxlib_jane.as_unlabeled_tuple labeled_exps with
+                   | Some exps -> List.concat_map exps ~f:get
+                   | None -> [])
                 | Pexp_apply ({ pexp_desc = Pexp_ident { txt = Lident d; _ }; _ }, _) ->
                   [ d ]
                 | _ -> []
@@ -93,14 +100,14 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
 let attribute t ~builder =
   let open (val builder : Builder.S) in
   let open Build_helper in
-  match t with
-  | [] -> None
-  | what_to_derive ->
-    let what_to_derive =
-      Tuple (List.map what_to_derive ~f:(fun entry -> Text (Entry.to_string entry)))
-    in
+  let what_to_derive =
+    match List.map t ~f:(fun entry -> Text (Entry.to_string entry)) with
+    | [] -> None
+    | [ x ] -> Some x
+    | xs -> Some (Tuple xs)
+  in
+  Option.map what_to_derive ~f:(fun what_to_derive ->
     attribute
       ~name:(Located.mk attribute_name)
-      ~payload:(PStr [ pstr_eval (e what_to_derive) [] ])
-    |> Option.return
+      ~payload:(PStr [ pstr_eval (e what_to_derive) [] ]))
 ;;

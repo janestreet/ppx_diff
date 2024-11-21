@@ -12,8 +12,9 @@ let var t = t.var
 
 let of_type_declaration td ~builder =
   let open (val builder : Builder.S) in
-  List.map td.ptype_params ~f:(function
-    | { ptyp_desc = Ptyp_var var; _ }, (variance, injectivity) ->
+  List.map td.ptype_params ~f:(fun (param, (variance, injectivity)) ->
+    match Ppxlib_jane.Shim.Core_type.of_parsetree param with
+    | { ptyp_desc = Ptyp_var (var, _); _ } ->
       { var = Var.of_string var; variance; injectivity }
     | _ -> raise_error "Unexpected type param, expected vars only")
 ;;

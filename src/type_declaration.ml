@@ -68,14 +68,17 @@ let to_items ?(flags = Flags.empty) (t : unit t) ~context =
           Core kind, true)
     in
     let ptype_kind, ptype_manifest = Type_kind.to_ppx_kind kind ~builder in
-    { ptype_name
-    ; ptype_params
-    ; ptype_cstrs = []
-    ; ptype_kind
-    ; ptype_private = (if private_ then Private else Public)
-    ; ptype_manifest
-    ; ptype_attributes = ptype_attributes ~unboxed:(unboxed && not simplified)
-    ; ptype_loc = loc
+    let attributes = ptype_attributes ~unboxed:(unboxed && not simplified) in
+    { (Ast_builder.Default.type_declaration
+         ~loc
+         ~cstrs:[]
+         ~name:ptype_name
+         ~params:ptype_params
+         ~kind:ptype_kind
+         ~private_:(if private_ then Private else Public)
+         ~manifest:ptype_manifest)
+      with
+      ptype_attributes = attributes
     }
   in
   { Items.sig_items = [ type_sig (td ~private_ ~simplify:true) ]

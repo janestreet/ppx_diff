@@ -65,12 +65,12 @@ module Functions = struct
            (pointer diff_type_declaration))
     in
     let sig_items =
-      [%sig:
-        val get : [%t fun_type get_base ~var_functions:[ get_base ]]
-        val apply_exn : [%t fun_type apply_base ~var_functions:[ apply_base ]]
-
-        val of_list_exn
-          : [%t fun_type of_list_base ~var_functions:[ of_list_base; apply_base ]]]
+      [ [%sigi: val get : [%t fun_type get_base ~var_functions:[ get_base ]]]
+      ; [%sigi: val apply_exn : [%t fun_type apply_base ~var_functions:[ apply_base ]]]
+      ; [%sigi:
+          val of_list_exn
+            : [%t fun_type of_list_base ~var_functions:[ of_list_base; apply_base ]]]
+      ]
     in
     let struct_items =
       Result.map t_or_error ~f:(fun { get; apply_exn; of_list_exn } ->
@@ -321,10 +321,10 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
       in
       let create_functions =
         let sig_items =
-          [%sig:
-            val singleton : [%t core_to_ppx single_type] -> [%t t_]
-            val create : [%t create_type]
-            val create_of_variants : [%t create_of_variants_type]]
+          [ [%sigi: val singleton : [%t core_to_ppx single_type] -> [%t t_]]
+          ; [%sigi: val create : [%t create_type]]
+          ; [%sigi: val create_of_variants : [%t create_of_variants_type]]
+          ]
         in
         let create =
           [%str
@@ -434,7 +434,9 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
           let module_expr =
             pmod_constraint
               structure
-              ([%sig: [@@@ocaml.warning "-32"]] @ sig_items |> pmty_signature)
+              ([%sigi: [@@@ocaml.warning "-32"]] :: sig_items
+               |> signature
+               |> pmty_signature)
           in
           [%str include [%m module_expr]])
       in

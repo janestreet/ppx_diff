@@ -52,7 +52,7 @@ let generate context type_to_diff_declaration ~how_to_diff : Items.t =
       Diff_atomic.create ~type_to_diff_declaration ~atomic ~builder ~sig_or_struct
   in
   let prefix =
-    { Items.sig_items = [%sig: open! Diffable.For_ppx]
+    { Items.sig_items = [ [%sigi: open! Diffable.For_ppx] ]
     ; struct_items = Ok [%str open! Diffable.For_ppx]
     }
   in
