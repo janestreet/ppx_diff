@@ -1,31 +1,33 @@
+module Atomic_ = Atomic
 open Base
+module Atomic = Atomic_
 open Base_quickcheck.Export
 open Bin_prot.Std
 
-module type S_with_quickcheck = sig
-  type t [@@deriving quickcheck]
+module type S_with_extra_deriving = sig
+  type t [@@deriving compare, equal, quickcheck]
 
   include Diff_intf.S with type t := t
 end
 
-module Make_atomic_with_quickcheck (M : sig
-    type t [@@deriving sexp, bin_io, equal, quickcheck]
+module Make_atomic_with_extra_deriving (M : sig
+    type t [@@deriving sexp, bin_io, compare, equal, quickcheck]
   end) =
 struct
   include Atomic.Make_diff (M)
 
-  type t = M.t [@@deriving quickcheck]
+  type t = M.t [@@deriving compare, equal, quickcheck]
 end
 
-module Diff_of_bool = Make_atomic_with_quickcheck (struct
-    type t = bool [@@deriving sexp, bin_io, equal, quickcheck]
+module Diff_of_bool = Make_atomic_with_extra_deriving (struct
+    type t = bool [@@deriving sexp, bin_io, compare, equal, quickcheck]
   end)
 
-module Diff_of_char = Make_atomic_with_quickcheck (struct
-    type t = char [@@deriving sexp, bin_io, equal, quickcheck]
+module Diff_of_char = Make_atomic_with_extra_deriving (struct
+    type t = char [@@deriving sexp, bin_io, compare, equal, quickcheck]
   end)
 
-module Diff_of_float = Make_atomic_with_quickcheck (struct
+module Diff_of_float = Make_atomic_with_extra_deriving (struct
     type t = float [@@deriving sexp, bin_io, compare, quickcheck]
 
     (* Overriding [equal], because
@@ -36,16 +38,16 @@ module Diff_of_float = Make_atomic_with_quickcheck (struct
     let equal = [%compare.equal: t]
   end)
 
-module Diff_of_int = Make_atomic_with_quickcheck (struct
-    type t = int [@@deriving sexp, bin_io, equal, quickcheck]
+module Diff_of_int = Make_atomic_with_extra_deriving (struct
+    type t = int [@@deriving sexp, bin_io, compare, equal, quickcheck]
   end)
 
-module Diff_of_string = Make_atomic_with_quickcheck (struct
-    type t = string [@@deriving sexp, bin_io, equal, quickcheck]
+module Diff_of_string = Make_atomic_with_extra_deriving (struct
+    type t = string [@@deriving sexp, bin_io, compare, equal, quickcheck]
   end)
 
-module Diff_of_unit = Make_atomic_with_quickcheck (struct
-    type t = unit [@@deriving sexp, bin_io, equal, quickcheck]
+module Diff_of_unit = Make_atomic_with_extra_deriving (struct
+    type t = unit [@@deriving sexp, bin_io, compare, equal, quickcheck]
   end)
 
 module Diff_of_option = struct

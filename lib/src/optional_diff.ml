@@ -5,6 +5,7 @@ end
 type 'a t = 'a Diff.t option
 
 let none = None
+let[@inline] get_none () = None
 let[@inline] return diff = exclave_ Some { Diff.diff }
 
 let[@inline] map t ~f = exclave_

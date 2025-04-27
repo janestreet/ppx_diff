@@ -1,3 +1,5 @@
+@@ portable
+
 (* Basically a ['a option], but designed to reduce allocations.
 
    If we have a [local_ 'a t] that means that ['a] was allocated, but ['a option] was not
@@ -7,6 +9,7 @@ open! Base
 type 'a t
 
 val none : _ t
+val get_none : unit -> _ t
 val return : 'a -> local_ 'a t
 val map : local_ 'a t -> f:local_ ('a -> 'b) -> local_ 'b t
 val bind : local_ 'a t -> f:local_ ('a -> local_ 'b t) -> local_ 'b t

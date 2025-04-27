@@ -120,7 +120,7 @@ let get ~field_diffs ~builder =
       [%expr
         fun ~from ~to_ -> exclave_
           if Base.phys_equal from to_
-          then Optional_diff.none
+          then Optional_diff.get_none ()
           else (
             (* let { x = from_x ; y = from_y ; ... } in
                let { x = to_x; y = to_y ; ... } in
@@ -168,7 +168,7 @@ let get ~field_diffs ~builder =
                       ~init:
                         [%expr
                           match diff with
-                          | [] -> Optional_diff.none
+                          | [] -> Optional_diff.get_none ()
                           | _ :: _ -> Optional_diff.return diff]]]])]
 ;;
 
@@ -253,7 +253,7 @@ let of_list ~field_diffs ~builder =
           match
             Base.List.map ts ~f:(function [%p variant_row ~field_name "x" |> p] -> x)
           with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | l ->
             Optional_diff.map
               ([%e of_list_fn ~field_name |> e] l)
@@ -296,7 +296,7 @@ let of_list ~field_diffs ~builder =
       [%expr
         fun l -> exclave_
           match l with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | _ :: _ as ts ->
             (match Base.List.concat ts |> Base.List.stable_sort ~compare:compare_rank with
              | [] -> Optional_diff.return []
