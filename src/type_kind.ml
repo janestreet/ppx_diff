@@ -49,7 +49,7 @@ let rec core_to_ppx (core : unit core) ~builder =
   let open (val builder : Builder.S) in
   match core_kind with
   | Var v -> Var.core_type v ~builder
-  | Tuple l -> ptyp_tuple (List.map l ~f:(fun t -> None, core_to_ppx t ~builder))
+  | Tuple l -> ptyp_tuple (List.map l ~f:(core_to_ppx ~builder))
   | Constr { params; module_; type_name } ->
     let lident_helper =
       module_
@@ -75,7 +75,7 @@ let rec core_to_ppx (core : unit core) ~builder =
 let label_declarations record_fields ~builder =
   let open (val builder : Builder.S) in
   List.map record_fields ~f:(fun { field_name; field_type; mutable_; global } ->
-    label_declaration
+    Jane_ast.label_declaration
       ~name:(Located.mk (Record_field_name.to_string field_name))
       ~type_:(core_to_ppx field_type ~builder)
       ~mutable_:(if mutable_ then Mutable else Immutable)
@@ -100,10 +100,10 @@ let to_ppx_kind t ~builder =
                (match row_type with
                 | None -> Pcstr_tuple []
                 | Some (Single type_) ->
-                  pcstr_tuple_no_modalities [ core_to_ppx type_ ~builder ]
+                  Jane_ast.pcstr_tuple [ [], core_to_ppx type_ ~builder ]
                 | Some (Inlined_tuple l) ->
-                  pcstr_tuple_no_modalities
-                    (List.map l ~f:(fun t -> core_to_ppx t ~builder))
+                  Jane_ast.pcstr_tuple
+                    (List.map l ~f:(fun x -> [], core_to_ppx x ~builder))
                 | Some (Inlined_record fields) ->
                   Pcstr_record (label_declarations fields ~builder))))
     , Option.map equal_to ~f:(core_to_ppx ~builder) )
@@ -327,7 +327,7 @@ let core_of_ppx = create_core
 let create_record fields ~builder =
   let open (val builder : Builder.S) in
   List.map fields ~f:(fun (field : label_declaration) ->
-    let modalities, field = get_label_declaration_modalities field in
+    let modalities, field = Ppxlib_jane.Shim.Label_declaration.extract_modalities field in
     let global =
       List.exists modalities ~f:(function
         | Modality "global" -> true
@@ -360,7 +360,7 @@ let of_ppx_kind
   ~builder
   =
   let t =
-    match type_kind, core_type with
+    match Ppxlib_jane.Shim.Type_kind.of_parsetree type_kind, core_type with
     | Ptype_abstract, None -> Abstract
     | Ptype_abstract, Some core_type -> Core (create_core core_type ~builder)
     | Ptype_record fields, equal_to ->
@@ -369,6 +369,8 @@ let of_ppx_kind
         ; local = false
         ; equal_to = Option.map equal_to ~f:(create_core ~builder)
         }
+    | Ptype_record_unboxed_product _, _ ->
+      not_supported builder "Ptype_record_unboxed_product"
     | Ptype_variant rows, equal_to ->
       Variant
         { rows =

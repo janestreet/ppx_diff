@@ -7,14 +7,18 @@ module Stable = struct
       type 'a t =
         | Add of 'a
         | Remove of 'a
-      [@@deriving sexp, bin_io]
+      [@@deriving bin_io, quickcheck, sexp]
     end
 
-    type 'a t = 'a Change.t list [@@deriving sexp, bin_io]
+    include struct
+      open Base_quickcheck
+
+      type 'a t = 'a Change.t list [@@deriving bin_io, quickcheck, sexp]
+    end
 
     let get ~from ~to_ =
       if phys_equal from to_
-      then Optional_diff.none
+      then Optional_diff.get_none ()
       else (
         let diff =
           Set.symmetric_diff from to_
@@ -23,7 +27,9 @@ module Stable = struct
             | First a -> Change.Remove a
             | Second a -> Change.Add a)
         in
-        if List.is_empty diff then Optional_diff.none else Optional_diff.return diff)
+        if List.is_empty diff
+        then Optional_diff.get_none ()
+        else Optional_diff.return diff)
     ;;
 
     let apply_exn set diff =
@@ -34,7 +40,7 @@ module Stable = struct
     ;;
 
     let of_list_exn = function
-      | [] -> Optional_diff.none
+      | [] -> Optional_diff.get_none ()
       | _ :: _ as l -> Optional_diff.return (List.concat l)
     ;;
 

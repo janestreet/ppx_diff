@@ -500,7 +500,7 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
         (match Row.diff row with
          | None ->
            (* The | A, A case *)
-           [%expr Optional_diff.none]
+           [%expr Optional_diff.get_none ()]
          | Some diff ->
            (* B: d = get_B ~from ~to_
               T: d = get_T ~from:(local_ ({ global = from1 }, ...)) ~to_:...
@@ -555,7 +555,7 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
       [%expr
         fun ~from ~to_ ->
           if Base.phys_equal from to_
-          then Optional_diff.none
+          then Optional_diff.get_none ()
           else
             [%e
               pexp_match
@@ -806,13 +806,13 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
       [%expr
         fun l ->
           match l with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | _ :: _ -> Optional_diff.return (Base.List.last_exn l)]
     else
       [%expr
         fun l ->
           match l with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | [ hd ] -> Optional_diff.return hd
           | l ->
             (* Otherwise look at the last [Set_to] (if any) + any diffs after it *)

@@ -7,6 +7,7 @@ open! Base
 type 'a t
 
 val none : _ t
+val get_none : unit -> _ t
 val return : 'a -> 'a t
 val map : 'a t -> f:('a -> 'b) -> 'b t
 val bind : 'a t -> f:('a -> 'b t) -> 'b t

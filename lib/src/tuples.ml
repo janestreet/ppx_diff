@@ -7,7 +7,8 @@ module Modes = struct
     include Modes.Global
 
     (* This is normally derived in Core, which depends on Diffable. *)
-    type 'a t = 'a Modes.Global.t = { global : 'a } [@@unboxed] [@@deriving bin_io]
+    type 'a t = 'a Modes.Global.t = { global : 'a [@globalized] }
+    [@@unboxed] [@@deriving bin_io]
   end
 end
 

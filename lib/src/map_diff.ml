@@ -9,16 +9,20 @@ module Stable = struct
         | Remove of 'k
         | Add of 'k * 'v
         | Diff of 'k * 'v_diff
-      [@@deriving sexp, bin_io, stable_witness]
+      [@@deriving bin_io, equal, quickcheck, sexp, stable_witness]
     end
 
-    type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list
-    [@@deriving sexp, bin_io, stable_witness]
+    include struct
+      open Base_quickcheck
+
+      type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list
+      [@@deriving bin_io, equal, quickcheck, sexp, stable_witness]
+    end
 
     let get (type a a_diff) (get_a : from:a -> to_:a -> a_diff Optional_diff.t) ~from ~to_
       =
       if phys_equal from to_
-      then Optional_diff.none
+      then Optional_diff.get_none ()
       else (
         let diff =
           Map.fold_symmetric_diff
@@ -36,7 +40,9 @@ module Stable = struct
                 then acc
                 else Change.Diff (key, Optional_diff.unsafe_value diff) :: acc)
         in
-        if List.is_empty diff then Optional_diff.none else Optional_diff.return diff)
+        if List.is_empty diff
+        then Optional_diff.get_none ()
+        else Optional_diff.return diff)
     ;;
 
     let apply_exn apply_a_exn derived_on diff =
@@ -48,7 +54,7 @@ module Stable = struct
     ;;
 
     let of_list_exn _ _ = function
-      | [] -> Optional_diff.none
+      | [] -> Optional_diff.get_none ()
       | l -> Optional_diff.return (List.concat l)
     ;;
 

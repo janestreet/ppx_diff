@@ -130,7 +130,7 @@ let generator sig_or_struct ~f =
         Builder.create
           (module struct
             include (val Ast_builder.make loc)
-            include (val Ppxlib_jane.Ast_builder.make loc)
+            module Jane_ast = (val Ppxlib_jane.Ast_builder.make loc)
           end)
       in
       let how_to_diff = How_to_diff.Maybe_abstract.create ~how ~key ~elt ~builder in

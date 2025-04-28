@@ -5,7 +5,7 @@ open Ppxlib
 
 module type Ast_builders = sig
   include Ast_builder.S
-  include Ppxlib_jane.Ast_builder.S_with_implicit_loc
+  module Jane_ast : Ppxlib_jane.Ast_builder.S_with_implicit_loc
 end
 
 module type S = sig

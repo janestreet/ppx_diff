@@ -1,10 +1,11 @@
 module Diff = struct
-  type 'a t = { diff : 'a } [@@unboxed]
+  type 'a t = { diff : 'a [@globalized] } [@@unboxed]
 end
 
 type 'a t = 'a Diff.t option
 
 let none = None
+let[@inline] get_none () = None
 let[@inline] return diff = Some { Diff.diff }
 
 let[@inline] map t ~f =

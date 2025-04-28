@@ -3,12 +3,9 @@ open Ppxlib
 
 (** Wrapper around [Longident] that's easier to work with.
 
-    e.g.
-    "t" is represented as [Simple [ "t"]]
-    "X.Diff.t" is represented as [Simple [ "X"; "Diff"; "t"]]
-    "A.B(C).D.t" is represented as
-    [Functor_application (Simple ["A"; "B"], Simple ["C"], [ "D"; "t" ]]
-*)
+    e.g. "t" is represented as [Simple [ "t"]] "X.Diff.t" is represented as
+    [Simple [ "X"; "Diff"; "t"]] "A.B(C).D.t" is represented as
+    [Functor_application (Simple ["A"; "B"], Simple ["C"], [ "D"; "t" ]] *)
 
 type 'a t =
   | Simple of 'a Nonempty_list.t

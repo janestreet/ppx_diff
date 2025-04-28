@@ -6,9 +6,10 @@ module Stable : sig
       type 'a t =
         | Add of 'a
         | Remove of 'a
+      [@@deriving quickcheck]
     end
 
-    type 'a t = 'a Change.t list [@@deriving sexp, bin_io]
+    type 'a t = 'a Change.t list [@@deriving bin_io, quickcheck, sexp]
 
     val get : from:('a, 'cmp) Set.t -> to_:('a, 'cmp) Set.t -> 'a t Optional_diff.t
     val apply_exn : ('a, 'cmp) Set.t -> 'a t -> ('a, 'cmp) Set.t

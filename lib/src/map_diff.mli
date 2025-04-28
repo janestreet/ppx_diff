@@ -7,11 +7,11 @@ module Stable : sig
         | Remove of 'k
         | Add of 'k * 'v
         | Diff of 'k * 'v_diff
-      [@@deriving sexp, bin_io, stable_witness]
+      [@@deriving bin_io, equal, quickcheck, sexp, stable_witness]
     end
 
     type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list
-    [@@deriving sexp, bin_io, stable_witness]
+    [@@deriving bin_io, equal, quickcheck, sexp, stable_witness]
 
     val get
       :  (from:'v -> to_:'v -> 'v_diff Optional_diff.t)
