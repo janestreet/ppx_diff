@@ -47,7 +47,7 @@ module Tuple2 = struct
 
     let get get1 get2 ~from ~to_ =
       if Base.phys_equal from to_
-      then Optional_diff.none
+      then Optional_diff.get_none ()
       else (
         let from_1, from_2 = from in
         let to_1, to_2 = to_ in
@@ -63,7 +63,7 @@ module Tuple2 = struct
           | Some d -> T1 d :: diff
         in
         match diff with
-        | [] -> Optional_diff.none
+        | [] -> Optional_diff.get_none ()
         | _ :: _ -> Optional_diff.return diff)
     ;;
 
@@ -86,7 +86,7 @@ module Tuple2 = struct
 
     let of_list_exn of_list1_exn _apply1_exn of_list2_exn _apply2_exn ts =
       match ts with
-      | [] -> Optional_diff.none
+      | [] -> Optional_diff.get_none ()
       | _ :: _ ->
         (match List.concat ts |> List.stable_sort ~compare:compare_rank with
          | [] -> Optional_diff.return []
@@ -183,7 +183,7 @@ module Tuple2 = struct
 
       let get get1 get2 ~from ~to_ =
         if Base.phys_equal from to_
-        then Optional_diff.none
+        then Optional_diff.get_none ()
         else (
           let { global = from_1 }, { global = from_2 } = from in
           let { global = to_1 }, { global = to_2 } = to_ in
@@ -199,7 +199,7 @@ module Tuple2 = struct
             | Some d -> T1 d :: diff
           in
           match diff with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | _ :: _ -> Optional_diff.return diff)
       ;;
 
@@ -255,7 +255,7 @@ module Tuple3 = struct
 
     let get get1 get2 get3 ~from ~to_ =
       if Base.phys_equal from to_
-      then Optional_diff.none
+      then Optional_diff.get_none ()
       else (
         let from_1, from_2, from_3 = from in
         let to_1, to_2, to_3 = to_ in
@@ -276,7 +276,7 @@ module Tuple3 = struct
           | Some d -> T1 d :: diff
         in
         match diff with
-        | [] -> Optional_diff.none
+        | [] -> Optional_diff.get_none ()
         | _ :: _ -> Optional_diff.return diff)
     ;;
 
@@ -312,7 +312,7 @@ module Tuple3 = struct
       ts
       =
       match ts with
-      | [] -> Optional_diff.none
+      | [] -> Optional_diff.get_none ()
       | _ :: _ ->
         (match List.concat ts |> List.stable_sort ~compare:compare_rank with
          | [] -> Optional_diff.return []
@@ -450,7 +450,7 @@ module Tuple3 = struct
 
       let get get1 get2 get3 ~from ~to_ =
         if Base.phys_equal from to_
-        then Optional_diff.none
+        then Optional_diff.get_none ()
         else (
           let { global = from_1 }, { global = from_2 }, { global = from_3 } = from in
           let { global = to_1 }, { global = to_2 }, { global = to_3 } = to_ in
@@ -471,7 +471,7 @@ module Tuple3 = struct
             | Some d -> T1 d :: diff
           in
           match diff with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | _ :: _ -> Optional_diff.return diff)
       ;;
 
@@ -535,7 +535,7 @@ module Tuple4 = struct
 
     let get get1 get2 get3 get4 ~from ~to_ =
       if Base.phys_equal from to_
-      then Optional_diff.none
+      then Optional_diff.get_none ()
       else (
         let from_1, from_2, from_3, from_4 = from in
         let to_1, to_2, to_3, to_4 = to_ in
@@ -561,7 +561,7 @@ module Tuple4 = struct
           | Some d -> T1 d :: diff
         in
         match diff with
-        | [] -> Optional_diff.none
+        | [] -> Optional_diff.get_none ()
         | _ :: _ -> Optional_diff.return diff)
     ;;
 
@@ -604,7 +604,7 @@ module Tuple4 = struct
       ts
       =
       match ts with
-      | [] -> Optional_diff.none
+      | [] -> Optional_diff.get_none ()
       | _ :: _ ->
         (match List.concat ts |> List.stable_sort ~compare:compare_rank with
          | [] -> Optional_diff.return []
@@ -771,7 +771,7 @@ module Tuple4 = struct
 
       let get get1 get2 get3 get4 ~from ~to_ =
         if Base.phys_equal from to_
-        then Optional_diff.none
+        then Optional_diff.get_none ()
         else (
           let ( { global = from_1 }
               , { global = from_2 }
@@ -805,7 +805,7 @@ module Tuple4 = struct
             | Some d -> T1 d :: diff
           in
           match diff with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | _ :: _ -> Optional_diff.return diff)
       ;;
 
@@ -890,7 +890,7 @@ module Tuple5 = struct
 
     let get get1 get2 get3 get4 get5 ~from ~to_ =
       if Base.phys_equal from to_
-      then Optional_diff.none
+      then Optional_diff.get_none ()
       else (
         let from_1, from_2, from_3, from_4, from_5 = from in
         let to_1, to_2, to_3, to_4, to_5 = to_ in
@@ -921,7 +921,7 @@ module Tuple5 = struct
           | Some d -> T1 d :: diff
         in
         match diff with
-        | [] -> Optional_diff.none
+        | [] -> Optional_diff.get_none ()
         | _ :: _ -> Optional_diff.return diff)
     ;;
 
@@ -971,7 +971,7 @@ module Tuple5 = struct
       ts
       =
       match ts with
-      | [] -> Optional_diff.none
+      | [] -> Optional_diff.get_none ()
       | _ :: _ ->
         (match List.concat ts |> List.stable_sort ~compare:compare_rank with
          | [] -> Optional_diff.return []
@@ -1170,7 +1170,7 @@ module Tuple5 = struct
 
       let get get1 get2 get3 get4 get5 ~from ~to_ =
         if Base.phys_equal from to_
-        then Optional_diff.none
+        then Optional_diff.get_none ()
         else (
           let ( { global = from_1 }
               , { global = from_2 }
@@ -1215,7 +1215,7 @@ module Tuple5 = struct
             | Some d -> T1 d :: diff
           in
           match diff with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | _ :: _ -> Optional_diff.return diff)
       ;;
 
@@ -1340,7 +1340,7 @@ module Tuple6 = struct
 
     let get get1 get2 get3 get4 get5 get6 ~from ~to_ =
       if Base.phys_equal from to_
-      then Optional_diff.none
+      then Optional_diff.get_none ()
       else (
         let from_1, from_2, from_3, from_4, from_5, from_6 = from in
         let to_1, to_2, to_3, to_4, to_5, to_6 = to_ in
@@ -1376,7 +1376,7 @@ module Tuple6 = struct
           | Some d -> T1 d :: diff
         in
         match diff with
-        | [] -> Optional_diff.none
+        | [] -> Optional_diff.get_none ()
         | _ :: _ -> Optional_diff.return diff)
     ;;
 
@@ -1444,7 +1444,7 @@ module Tuple6 = struct
       ts
       =
       match ts with
-      | [] -> Optional_diff.none
+      | [] -> Optional_diff.get_none ()
       | _ :: _ ->
         (match List.concat ts |> List.stable_sort ~compare:compare_rank with
          | [] -> Optional_diff.return []
@@ -1696,7 +1696,7 @@ module Tuple6 = struct
 
       let get get1 get2 get3 get4 get5 get6 ~from ~to_ =
         if Base.phys_equal from to_
-        then Optional_diff.none
+        then Optional_diff.get_none ()
         else (
           let ( { global = from_1 }
               , { global = from_2 }
@@ -1748,7 +1748,7 @@ module Tuple6 = struct
             | Some d -> T1 d :: diff
           in
           match diff with
-          | [] -> Optional_diff.none
+          | [] -> Optional_diff.get_none ()
           | _ :: _ -> Optional_diff.return diff)
       ;;
 

@@ -9,14 +9,14 @@ module Stable = struct
         | Remove of 'k
         | Add of 'k * 'v
         | Diff of 'k * 'v_diff
-      [@@deriving bin_io, equal, quickcheck, sexp, stable_witness]
+      [@@deriving bin_io, equal ~localize, quickcheck, sexp, stable_witness]
     end
 
     include struct
       open Base_quickcheck
 
       type ('k, 'v, 'v_diff) t = ('k, 'v, 'v_diff) Change.t list
-      [@@deriving bin_io, equal, quickcheck, sexp, stable_witness]
+      [@@deriving bin_io, equal ~localize, quickcheck, sexp, stable_witness]
     end
 
     let get (type a a_diff) (get_a : from:a -> to_:a -> a_diff Optional_diff.t) ~from ~to_

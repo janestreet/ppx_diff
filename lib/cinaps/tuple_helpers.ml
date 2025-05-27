@@ -239,14 +239,14 @@ let tuple_ml size =
         let get %{List.map nums ~f:get |> String.concat ~sep:" "} ~from ~to_ =
           exclave_
           if Base.phys_equal from to_
-          then Optional_diff.none
+          then Optional_diff.get_none ()
           else (
             let %{List.map nums ~f:(from ~gel) |> String.concat ~sep:", "} = from in
             let %{List.map nums ~f:(to_ ~gel) |> String.concat ~sep:", "} = to_ in
             let diff = [] in
             %{List.rev_map nums ~f:get_diff |> String.concat ~sep:""}
             match diff with
-            | [] -> Optional_diff.none
+            | [] -> Optional_diff.get_none ()
             | _ :: _ -> Optional_diff.return diff)
 
 
@@ -268,7 +268,7 @@ let tuple_ml size =
       {|
       let of_list_exn %{of_list_and_apply_functions} ts = exclave_
         match ts with
-        | [] -> Optional_diff.none
+        | [] -> Optional_diff.get_none ()
         | _ :: _ ->
           match List.concat ts |> List.stable_sort ~compare:compare_rank with
           | [] -> Optional_diff.return []

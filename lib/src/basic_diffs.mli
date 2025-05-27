@@ -1,7 +1,7 @@
 open Base
 
 module type S_with_extra_deriving = sig
-  type t [@@deriving compare, equal, quickcheck]
+  type t [@@deriving compare ~localize, equal ~localize, quickcheck]
 
   include Diff_intf.S with type t := t
 end
