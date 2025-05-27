@@ -2,7 +2,8 @@ open! Base
 open Ppxlib
 
 module Atomic = struct
-  type t = { using_compare : bool } [@@deriving enumerate, equal, compare]
+  type t = { using_compare : bool }
+  [@@deriving enumerate, equal ~localize, compare ~localize]
 
   let to_string { using_compare } =
     "atomic" ^ if using_compare then "_using_compare" else ""
@@ -48,7 +49,7 @@ module Custom = struct
       | Atomic of Atomic.t
       | As_set
       | As_map
-    [@@deriving enumerate, compare]
+    [@@deriving enumerate, compare ~localize]
 
     let to_string = function
       | Atomic atomic -> Atomic.to_string atomic
@@ -119,7 +120,7 @@ module Custom = struct
       type t =
         | Custom of Flat.t
         | Abstract
-      [@@deriving enumerate, compare]
+      [@@deriving enumerate, compare ~localize]
 
       let to_string = function
         | Custom custom -> Flat.to_string custom

@@ -5,30 +5,32 @@ open Base_quickcheck.Export
 open Bin_prot.Std
 
 module type S_with_extra_deriving = sig
-  type t [@@deriving compare, equal, quickcheck]
+  type t [@@deriving compare ~localize, equal ~localize, quickcheck]
 
   include Diff_intf.S with type t := t
 end
 
 module Make_atomic_with_extra_deriving (M : sig
-    type t [@@deriving sexp, bin_io, compare, equal, quickcheck]
+    type t [@@deriving sexp, bin_io, compare ~localize, equal ~localize, quickcheck]
   end) =
 struct
   include Atomic.Make_diff (M)
 
-  type t = M.t [@@deriving compare, equal, quickcheck]
+  type t = M.t [@@deriving compare ~localize, equal ~localize, quickcheck]
 end
 
 module Diff_of_bool = Make_atomic_with_extra_deriving (struct
-    type t = bool [@@deriving sexp, bin_io, compare, equal, quickcheck]
+    type t = bool
+    [@@deriving sexp, bin_io, compare ~localize, equal ~localize, quickcheck]
   end)
 
 module Diff_of_char = Make_atomic_with_extra_deriving (struct
-    type t = char [@@deriving sexp, bin_io, compare, equal, quickcheck]
+    type t = char
+    [@@deriving sexp, bin_io, compare ~localize, equal ~localize, quickcheck]
   end)
 
 module Diff_of_float = Make_atomic_with_extra_deriving (struct
-    type t = float [@@deriving sexp, bin_io, compare, quickcheck]
+    type t = float [@@deriving sexp, bin_io, compare ~localize, quickcheck]
 
     (* Overriding [equal], because
        - [Float.equal Float.nan Float.nan = false]
@@ -36,18 +38,21 @@ module Diff_of_float = Make_atomic_with_extra_deriving (struct
          The latter makes more sense for diffs
     *)
     let equal = [%compare.equal: t]
+    let%template[@mode local] equal = [%compare_local.equal: t]
   end)
 
 module Diff_of_int = Make_atomic_with_extra_deriving (struct
-    type t = int [@@deriving sexp, bin_io, compare, equal, quickcheck]
+    type t = int [@@deriving sexp, bin_io, compare ~localize, equal ~localize, quickcheck]
   end)
 
 module Diff_of_string = Make_atomic_with_extra_deriving (struct
-    type t = string [@@deriving sexp, bin_io, compare, equal, quickcheck]
+    type t = string
+    [@@deriving sexp, bin_io, compare ~localize, equal ~localize, quickcheck]
   end)
 
 module Diff_of_unit = Make_atomic_with_extra_deriving (struct
-    type t = unit [@@deriving sexp, bin_io, compare, equal, quickcheck]
+    type t = unit
+    [@@deriving sexp, bin_io, compare ~localize, equal ~localize, quickcheck]
   end)
 
 module Diff_of_option = struct

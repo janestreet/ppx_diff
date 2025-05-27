@@ -1,3 +1,5 @@
+@@ portable
+
 open! Base
 
 val max_supported : int * Lexing.position
