@@ -322,6 +322,7 @@ let rec create_core core_type ~builder : How_to_diff.t core =
     | Ptyp_poly _ -> not_supported builder "Ptyp_poly"
     | Ptyp_package _ -> not_supported builder "Ptyp_package"
     | Ptyp_extension _ -> not_supported builder "Ptyp_extension"
+    | Ptyp_open _ -> not_supported builder "Ptyp_open"
   in
   kind, how_to_diff
 ;;

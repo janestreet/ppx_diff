@@ -746,7 +746,7 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
 
        If there is only one row, there are no error cases.
     *)
-    pexp_function
+    pexp_function_cases
       ([ Option.some_if
            (Option.is_some (Row.diff row))
            (case ~lhs:[%pat? [%p r row Diff Prefix.diff |> p]] ~rhs:[%expr diff])
@@ -822,7 +822,7 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
                      let case row which return =
                        case ~lhs:[%pat? [%p r row which any |> p]] ~rhs:return
                      in
-                     pexp_function
+                     pexp_function_cases
                        (List.map diff_rows ~f:(fun (row, _) -> case row Diff [%expr true])
                         @ List.map set_rows ~f:(fun row -> case row Set [%expr false]))]
           in
