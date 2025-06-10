@@ -1,6 +1,8 @@
+@@ portable
+
 open Base
 
-module type S_with_extra_deriving = sig
+module type S_with_extra_deriving = sig @@ portable
   type t [@@deriving compare ~localize, equal ~localize, quickcheck]
 
   include Diff_intf.S with type t := t
