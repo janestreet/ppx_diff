@@ -7,6 +7,9 @@ let rec create core ~context =
   match (how_to_diff : How_to_diff.t) with
   | None ->
     (match (kind : _ Type_kind.core_kind) with
+     | Any ->
+       let open (val builder : Builder.S) in
+       raise_error "Cannot diff ptyp_any (_) types"
      | Var var -> Diff_var.create var ~builder
      | Tuple tuple -> Diff_tuple.create tuple ~builder ~create_core
      | Constr constr -> Diff_constr.create constr ~create_core ~builder

@@ -75,8 +75,10 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
     @
     match (how_to_diff : How_to_diff.Atomic.t option), sig_or_struct with
     | None, _ | _, `sig_ -> []
-    | Some { using_compare }, `struct_ ->
-      [ (if using_compare then Entry.compare else Entry.equal) ]
+    | Some atomic, `struct_ ->
+      (match atomic with
+       | Using_equal | Using_equal_via_get -> [ Entry.equal ]
+       | Using_compare -> [ Entry.compare ])
   in
   match List.find_all_dups extra ~compare:String.compare with
   | [] ->

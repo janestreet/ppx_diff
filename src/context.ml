@@ -6,4 +6,5 @@ type t =
   ; all_params : Type_param.t list
   ; sig_or_struct : [ `sig_ | `struct_ ]
   ; stable_version : Stable_version.t option
+  ; portable : bool
   }

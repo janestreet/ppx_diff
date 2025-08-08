@@ -14,7 +14,10 @@ module Label : sig
 end
 
 module Atomic : sig
-  type t = { using_compare : bool }
+  type t =
+    | Using_equal
+    | Using_compare
+    | Using_equal_via_get
 
   val to_string : t -> string
 end

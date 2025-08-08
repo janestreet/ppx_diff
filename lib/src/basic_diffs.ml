@@ -12,9 +12,10 @@ end
 
 module Make_atomic_with_extra_deriving (M : sig
     type t [@@deriving sexp, bin_io, compare ~localize, equal ~localize, quickcheck]
-  end) =
-struct
-  include Atomic.Make_diff (M)
+  end) : sig
+  include S_with_extra_deriving with type derived_on = M.t and type t = M.t
+end = struct
+  include%template Atomic.Make_diff [@mode portable] (M)
 
   type t = M.t [@@deriving compare ~localize, equal ~localize, quickcheck]
 end
@@ -66,10 +67,10 @@ module Diff_of_option = struct
 
   let get get_a ~from ~to_ =
     if phys_equal from to_
-    then Optional_diff.none
+    then Optional_diff.get_none ()
     else (
       match from, to_ with
-      | None, None -> Optional_diff.none
+      | None, None -> Optional_diff.get_none ()
       | Some from, Some to_ ->
         Optional_diff.map (get_a ~from ~to_) ~f:(fun d -> Diff_some d)
       | None, Some x -> Optional_diff.return (Set_to_some x)
@@ -89,7 +90,7 @@ module Diff_of_option = struct
 
   let of_list_exn of_list_exn_a apply_a_exn diffs =
     match diffs with
-    | [] -> Optional_diff.none
+    | [] -> Optional_diff.get_none ()
     | [ hd ] -> Optional_diff.return hd
     | l ->
       let trailing_diffs_rev, rest_rev =

@@ -654,6 +654,36 @@ type t =
 `atomic_using_compare` does not work in mlis/signatures, just continue using `atomic`
 there - the generated signature is exactly the same
 
+### Atomic parametrized types
+
+The `atomic` and `atomic_using_compare` attributes do not work for parametrized types
+
+E.g. the following will not work:
+
+```ocaml
+type 'a t = 'a list [@@deriving equal, diff ~how:"atomic"]
+```
+
+However, we can still get atomic diffs to work for these types in a less-performant way.
+We can check if `[%equal: 'a list]` by defining an equality function for `'a` using the
+```ocaml
+val get_a : (from:'a -> to_:'a -> local_ 'a_diff Optional_diff.t)
+```
+function passed to `get`. We can say:
+```ocaml
+let equal a1 a2 = Optional_diff.is_none (get_a ~from:a1 ~to_:a2)
+```
+
+This is done by the `atomic_via_get` attribute. We insist on naming it differently,
+because it could allocate additional `a` diffs, so we want to prompt you to think about
+performance characteristics when using this attribute.
+
+In short, the following will work:
+
+```ocaml
+type 'a t = 'a list [@@deriving equal, diff ~how:"atomic_via_get"]
+```
+
 
 ### A word of warning about NANs
 

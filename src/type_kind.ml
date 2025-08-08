@@ -2,6 +2,7 @@ open! Base
 open Ppxlib
 
 type 'extra core_kind =
+  | Any
   | Var of Var.t
   | Tuple of 'extra core list
   | Constr of 'extra constr
@@ -48,6 +49,7 @@ let rec core_to_ppx (core : unit core) ~builder =
   let core_kind, () = core in
   let open (val builder : Builder.S) in
   match core_kind with
+  | Any -> ptyp_any
   | Var v -> Var.core_type v ~builder
   | Tuple l -> ptyp_tuple (List.map l ~f:(core_to_ppx ~builder))
   | Constr { params; module_; type_name } ->
@@ -113,6 +115,7 @@ let rec fold_core (type extra) core ~init ~f =
   let core, (_ : extra) = core in
   let init = f init core in
   match core with
+  | Any -> init
   | Var (_ : Var.t) -> init
   | Tuple l -> List.fold l ~init ~f:(fun acc core -> fold_core core ~init:acc ~f)
   | Constr
@@ -173,14 +176,14 @@ let fold t ~init ~f =
 let vars t =
   fold t ~init:[] ~f:(fun acc -> function
     | Var var -> var :: acc
-    | Tuple _ | Constr _ | Polymorphic_variant _ -> acc)
+    | Any | Tuple _ | Constr _ | Polymorphic_variant _ -> acc)
   |> List.rev
 ;;
 
 let constrs t =
   fold t ~init:[] ~f:(fun acc -> function
     | Constr constr -> constr :: acc
-    | Var _ | Tuple _ | Polymorphic_variant _ -> acc)
+    | Any | Var _ | Tuple _ | Polymorphic_variant _ -> acc)
   |> List.rev
 ;;
 
@@ -194,6 +197,7 @@ let rec map_core (core_kind, extra) ~f = map_core_kind core_kind ~f, f extra
 and map_core_kind kind ~f =
   let map_core = map_core ~f in
   match kind with
+  | Any -> Any
   | Var var -> Var var
   | Tuple l -> Tuple (List.map l ~f:map_core)
   | Constr { params; module_; type_name } ->
