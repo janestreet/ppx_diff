@@ -37,6 +37,7 @@ let to_items ?(flags = Flags.empty) (t : unit t) ~context =
       ; all_params = _
       ; sig_or_struct = _
       ; stable_version = _
+      ; portable = _
       }
     =
     context

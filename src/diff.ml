@@ -434,7 +434,14 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
           let module_expr =
             pmod_constraint
               structure
-              ([%sigi: [@@@ocaml.warning "-32"]] :: sig_items |> pmty_signature)
+              ([%sigi: [@@@ocaml.warning "-32"]] :: sig_items
+               |> Ppxlib_jane.Ast_builder.Default.signature
+                    ~loc
+                    ~modalities:
+                      (if context.portable
+                       then [ Loc.make ~loc (Ppxlib_jane.Modality "portable") ]
+                       else [])
+               |> Ppxlib_jane.Ast_builder.Default.pmty_signature ~loc)
           in
           [%str include [%m module_expr]])
       in

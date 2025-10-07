@@ -2,6 +2,7 @@ open! Base
 open Ppxlib
 
 type 'extra core_kind =
+  | Any
   | Var of Var.t
   | Tuple of 'extra core list
   | Constr of 'extra constr

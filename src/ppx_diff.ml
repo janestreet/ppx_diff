@@ -117,7 +117,8 @@ let generator sig_or_struct ~f =
       +> arg How_to_diff.Label.key How_to_diff.Type_.pattern
       +> arg How_to_diff.Label.elt How_to_diff.Type_.pattern
       +> What_to_derive.Extra.arg
-      +> arg "stable_version" (Ast_pattern.eint __))
+      +> arg "stable_version" (Ast_pattern.eint __)
+      +> flag "portable")
     (fun ~(loc : Location.t)
       ~path:(_ : string)
       ((rec_flag : rec_flag), (type_declarations : type_declaration list))
@@ -125,7 +126,8 @@ let generator sig_or_struct ~f =
       key
       elt
       extra_derive
-      stable_version ->
+      stable_version
+      portable ->
       let (builder : Builder.t) =
         Builder.create
           (module struct
@@ -146,8 +148,12 @@ let generator sig_or_struct ~f =
       (match really_recursive rec_flag type_declarations with
        | Recursive ->
          (match how_to_diff with
-          | Some (_ : How_to_diff.Atomic.t) -> ()
-          | _ -> raise_error "recursive types are not supported (except for atomic diffs)")
+          | Some (_ : How_to_diff.Atomic.t)
+            when List.is_empty type_to_diff_declaration.params -> ()
+          | _ ->
+            raise_error
+              "recursive types are not supported (except for atomic diffs of types with \
+               no parameters)")
        | Nonrecursive -> validate_rec_flag type_to_diff_declaration rec_flag ~builder);
       let what_to_derive =
         What_to_derive.create ?extra:extra_derive td how_to_diff sig_or_struct ~builder
@@ -158,19 +164,32 @@ let generator sig_or_struct ~f =
         ; all_params = type_to_diff_declaration.params
         ; sig_or_struct
         ; stable_version = Option.map stable_version ~f:(Stable_version.of_int ~builder)
+        ; portable
         }
       in
       let t = generate context type_to_diff_declaration ~how_to_diff in
-      f t ~builder)
+      f t ~builder ~context)
 ;;
 
 module Gen_sig = struct
-  let generator = generator `sig_ ~f:(fun items ~builder:_ -> items.sig_items)
+  let generator =
+    generator `sig_ ~f:(fun items ~builder:(module Builder) ~context ->
+      if not context.portable
+      then items.sig_items
+      else
+        [ Builder.Jane_ast.signature
+            ~modalities:[ Loc.make (Ppxlib_jane.Modality "portable") ~loc:Builder.loc ]
+            items.sig_items
+          |> Builder.Jane_ast.pmty_signature
+          |> Builder.include_infos
+          |> Builder.psig_include
+        ])
+  ;;
 end
 
 module Gen_struct = struct
   let generator =
-    generator `struct_ ~f:(fun items ~builder ->
+    generator `struct_ ~f:(fun items ~builder ~context:_ ->
       match items.Items.struct_items with
       | Ok items -> items
       | Error error ->

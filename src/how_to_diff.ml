@@ -2,11 +2,20 @@ open! Base
 open Ppxlib
 
 module Atomic = struct
-  type t = { using_compare : bool }
+  type t =
+    | Using_equal
+    | Using_compare
+    | Using_equal_via_get
   [@@deriving enumerate, equal ~localize, compare ~localize]
 
-  let to_string { using_compare } =
-    "atomic" ^ if using_compare then "_using_compare" else ""
+  let to_string t =
+    let suffix =
+      match t with
+      | Using_equal -> ""
+      | Using_compare -> "_using_compare"
+      | Using_equal_via_get -> "_via_get"
+    in
+    "atomic" ^ suffix
   ;;
 end
 
