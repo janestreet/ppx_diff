@@ -43,7 +43,7 @@ let create kind ~elt ~context =
   in
   let module_ = Option.map module_ ~f:(Longident_helper.map ~f:Module_name.to_string) in
   let fn name =
-    Longident_helper.add_suffix module_ ~suffix:(Function_name.to_string name, [])
+    Longident_helper.add_suffix module_ ~suffix:[ Function_name.to_string name ]
     |> Longident_helper.to_expression ~builder
   in
   { Core_diff.diff_type

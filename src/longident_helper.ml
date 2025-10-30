@@ -16,7 +16,7 @@ let of_longident longident ~builder =
   let open (val builder : Builder.S) in
   let rec parse longident acc =
     match longident with
-    | Lident s -> Simple (s, acc)
+    | Lident s -> Simple (s :: acc)
     | Ldot (x, s) -> parse x (s :: acc)
     | Lapply (x, y) -> Functor_application (parse x [], parse y [], acc)
   in
@@ -24,7 +24,7 @@ let of_longident longident ~builder =
 ;;
 
 let rec to_longident = function
-  | Simple (hd, tl) -> List.fold tl ~init:(Lident hd) ~f:(fun acc s -> Ldot (acc, s))
+  | Simple (hd :: tl) -> List.fold tl ~init:(Lident hd) ~f:(fun acc s -> Ldot (acc, s))
   | Functor_application (functor_, arg, rest) ->
     List.fold
       rest
@@ -39,13 +39,13 @@ let to_expression l ~builder =
 
 let of_simple_list = function
   | [] -> None
-  | hd :: tl -> Some (Simple (hd, tl))
+  | hd :: tl -> Some (Simple (hd :: tl))
 ;;
 
 let to_simple_list t_opt ~on_functor_application ~builder =
   match t_opt with
   | None -> []
-  | Some (Simple (hd, tl)) -> hd :: tl
+  | Some (Simple (hd :: tl)) -> hd :: tl
   | Some (Functor_application (functor_, arg, _)) ->
     let open (val builder : Builder.S) in
     raise_error (Error.to_string_hum (on_functor_application (functor_, arg)))

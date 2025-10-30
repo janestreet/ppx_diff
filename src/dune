@@ -2,7 +2,7 @@
  (name ppx_diff)
  (public_name ppx_diff.ppx_diff)
  (kind ppx_rewriter)
- (libraries base ppxlib ppxlib_jane diffable)
+ (libraries base diffable ppxlib ppxlib_jane)
  (ppx_runtime_libraries ppx_diff.diffable)
  (preprocess
   (pps ppx_enumerate ppx_compare ppxlib.metaquot)))
