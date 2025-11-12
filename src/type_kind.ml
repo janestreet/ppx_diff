@@ -56,7 +56,7 @@ let rec core_to_ppx (core : unit core) ~builder =
     let lident_helper =
       module_
       |> Option.map ~f:(Longident_helper.map ~f:Module_name.to_string)
-      |> Longident_helper.add_suffix ~suffix:(Type_name.to_string type_name, [])
+      |> Longident_helper.add_suffix ~suffix:[ Type_name.to_string type_name ]
     in
     ptyp_constr
       (Located.mk (Longident_helper.to_longident lident_helper))
@@ -81,7 +81,7 @@ let label_declarations record_fields ~builder =
       ~name:(Located.mk (Record_field_name.to_string field_name))
       ~type_:(core_to_ppx field_type ~builder)
       ~mutable_:(if mutable_ then Mutable else Immutable)
-      ~modalities:(if global then [ Modality "global" ] else []))
+      ~modalities:(if global then [ Located.mk (Ppxlib_jane.Modality "global") ] else []))
 ;;
 
 let to_ppx_kind t ~builder =
@@ -334,8 +334,8 @@ let create_record fields ~builder =
     let modalities, field = Ppxlib_jane.Shim.Label_declaration.extract_modalities field in
     let global =
       List.exists modalities ~f:(function
-        | Modality "global" -> true
-        | Modality _ -> false)
+        | { txt = Modality "global"; _ } -> true
+        | { txt = Modality _; _ } -> false)
     in
     let { pld_name; pld_mutable; pld_type; pld_loc = _; pld_attributes = _; _ } = field in
     let field_type =

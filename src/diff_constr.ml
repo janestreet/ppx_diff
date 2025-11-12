@@ -49,7 +49,7 @@ let create
   let fn_name fn =
     List.map module_ ~f:Module_name.to_string
     |> Longident_helper.of_simple_list
-    |> Longident_helper.add_suffix ~suffix:(Function_name.to_string fn, [])
+    |> Longident_helper.add_suffix ~suffix:[ Function_name.to_string fn ]
     |> Longident_helper.to_expression ~builder
   in
   let get =

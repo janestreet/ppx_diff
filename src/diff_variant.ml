@@ -97,7 +97,7 @@ end = struct
     in
     let collisions =
       let rec hds = function
-        | Longident_helper.Simple (hd, _) -> [ hd ]
+        | Longident_helper.Simple (hd :: _) -> [ hd ]
         | Functor_application (functor_, arg, _tl) -> hds functor_ @ hds arg
       in
       variant

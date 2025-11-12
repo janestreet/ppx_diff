@@ -20,5 +20,5 @@ let key_or_elt_heuristic ~module_ ~type_name map_or_set =
     else (
       match Nonempty_list.drop_last l with
       | [] -> None
-      | hd :: tl -> return (Simple (hd, tl)))
+      | hd :: tl -> return (Simple (hd :: tl)))
 ;;
