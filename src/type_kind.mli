@@ -45,8 +45,8 @@ type 'extra t =
       ; local : bool
       }
 
-(* In a type declaration like [ type t = foo = { bar : int } ],
-   The core_type is [foo] and the type_kind is [{bar : int}]. *)
+(* In a type declaration like [ type t = foo = { bar : int } ], The core_type is [foo] and
+   the type_kind is [{bar : int}]. *)
 type ppx_kind := type_kind * core_type option
 
 val of_ppx_kind

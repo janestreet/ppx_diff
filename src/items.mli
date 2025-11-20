@@ -1,5 +1,5 @@
 (* Helper module that allows us to keep [signature_item list] and [structure_item list]
-   together.  That way we can compose them easier:
+   together. That way we can compose them easier:
 
    If we know that each of [t1], [t2], ... are well-formed, i.e. [struct_items] implement
    [sig_items], the same should be true for [concat [t1 ; t2 ; ...]]

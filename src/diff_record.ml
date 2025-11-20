@@ -6,19 +6,21 @@ open Build_helper
 
    The diff for
 
-   type 'a t = { x : X.t ; y : Y.t ; ... }
+   type 'a t = [{ x : X.t ; y : Y.t ; ... }]
 
    will be:
 
-   {[type ('a, 'a_diff) single =
+   {[
+     type ('a, 'a_diff) single =
        | X of X.Diff.t
        | Y of Y.Diff.t
-       (* etc *)
+     (* etc *)
 
      type ('a, 'a_diff) t = private ('a, 'a_diff) single list
    ]}
 
-   The entries in the list are guaranteed to be sorted and unique (i.e at most one per field)
+   The entries in the list are guaranteed to be sorted and unique (i.e at most one per
+   field)
 
    There is a special case for a diff with one field: we don't return a list, just the one
    single element.
@@ -108,8 +110,8 @@ let get ~field_diffs ~builder =
   List.fold
     (Field_diffs.to_list field_diffs)
     ~f:(fun expr { field_name; field_diff } ->
-      (* Pre-allocate the functions to get specific entry diffs. Without this, diffs
-         for parametrized types would allocate the closures. Tested by
+      (* Pre-allocate the functions to get specific entry diffs. Without this, diffs for
+         parametrized types would allocate the closures. Tested by
          [test_record.ml:parametrized], which allocates without this *)
       [%expr
         let [%p with_prefix ~field_name (Some Prefix.get) |> p] =
@@ -122,9 +124,8 @@ let get ~field_diffs ~builder =
           if Base.phys_equal from to_
           then Optional_diff.get_none ()
           else (
-            (* let { x = from_x ; y = from_y ; ... } in
-               let { x = to_x; y = to_y ; ... } in
-               let diff = [] in
+            (* let [{ x = from_x ; y = from_y ; ... }] in let
+               [{ x = to_x; y = to_y ; ... }] in let diff = [] in
             *)
             let [%p record ~field_names (Some Prefix.from) |> p] = from in
             let [%p record ~field_names (Some Prefix.to_) |> p] = to_ in
@@ -141,8 +142,8 @@ let get ~field_diffs ~builder =
                     List.fold
                       field_diffs
                       ~f:(fun expr { Field_diff.field_name; field_diff = _ } ->
-                        (*
-                           {[let diff =
+                        (* {[
+                             let diff =
                                let d = Y.Diff.get ~from:from_y ~to_:to_y in
                                if Optional_diff.is_none d
                                then diff
@@ -153,8 +154,8 @@ let get ~field_diffs ~builder =
                              (*... *)
                            ]}
 
-                           (Note that this has to go in reverse order of record fields , so that we
-                           don't need to allocate a rev list at the end) *)
+                           (Note that this has to go in reverse order of record fields ,
+                           so that we don't need to allocate a rev list at the end) *)
                         [%expr
                           let diff =
                             let d = [%e diff_of_field ~field_name] in
@@ -215,13 +216,14 @@ let apply ~field_diffs ~local_apply ~builder =
                       field_diffs
                       ~f:(fun { field_name; field_diff = _ } expr ->
                         let txt = with_prefix ~field_name in
-                        (* {[ let x, diff =
-                          match diff with
-                          | T1 d :: tl -> X.Diff.apply_exn derived_on1 d, tl
-                          | _ -> derived_on1, diff
-                       in
-                       (* ... *)
-                     ]}
+                        (* {[
+                             let x, diff =
+                                match diff with
+                                | T1 d :: tl -> X.Diff.apply_exn derived_on1 d, tl
+                                | _ -> derived_on1, diff
+                             in
+                             (* ... *)
+                           ]}
                         *)
                         [%expr
                           let [%p txt None |> p], diff =
@@ -232,10 +234,11 @@ let apply ~field_diffs ~local_apply ~builder =
                           in
                           [%e expr]])
                       ~init:
-                        (* {[ match diff with
-                       | [] -> { x ; y ; ... }
-                       | _ :: _ -> BUG
-                     ]}*)
+                        (* {[
+                             match diff with
+                             | [] -> { x ; y ; ... }
+                             | _ :: _ -> BUG
+                           ]} *)
                         [%expr
                           match diff with
                           | [] -> [%e record ~field_names None |> e]
@@ -260,7 +263,8 @@ let of_list ~field_diffs ~builder =
               ~f:(fun d -> [%e variant_row ~field_name "d" |> e])]
     | Multi field_diffs ->
       let match_case { Field_diff.field_name; field_diff = _ } =
-        (* {[ | X d :: tl ->
+        (* {[
+             | X d :: tl ->
              (* Collect all Xs from the from of the list *)
              let ds, tl = List.split_while ts ~f:(function
                | X _x -> true
@@ -306,7 +310,7 @@ let of_list ~field_diffs ~builder =
                    [%e
                      pexp_match
                        [%expr l]
-                       (* | [] -> List.rev acc *)
+                       (*=| [] -> List.rev acc *)
                        (case ~lhs:[%pat? []] ~guard:None ~rhs:[%expr Base.List.rev acc]
                         :: List.map field_diffs ~f:match_case)]
                  in

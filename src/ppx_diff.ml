@@ -91,10 +91,11 @@ let validate_rec_flag (td : How_to_diff.t Type_declaration.t) rec_flag ~builder 
 
           But even writing
 
-          {[ module Diff = struct
-               type derived_on = t
-               type nonrec t = (t, string, Diff.t, Diff_of_string.t) Tuple2.Diff.t
-             end
+          {[
+            module Diff = struct
+              type derived_on = t
+              type nonrec t = (t, string, Diff.t, Diff_of_string.t) Tuple2.Diff.t
+            end
           ]}
 
           would not be enough, because the [t] in [(t, string, ...)] is the wrong [t].

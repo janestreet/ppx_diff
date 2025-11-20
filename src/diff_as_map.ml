@@ -9,8 +9,7 @@ let create
   =
   let { Context.builder; stable_version; _ } = context in
   let open (val builder : Builder.S) in
-  (* [value] = v ?[@diff.xxx]
-     [map_module_name] = Map_module
+  (* [value] = v ?[@diff.xxx] [map_module_name] = Map_module
   *)
   let how_to_diff = How_to_diff.Custom.As_map { key } in
   let default_key, value =

@@ -7,7 +7,7 @@ let of_list_exn = "of_list_exn"
 
 let function_of_var t var =
   (* Starts with a "_", so that some functions can be unused without the compiler
-     complaining.  E.g. if [type ('a, 'b) t = 'a option], then the _get_b and _apply_b
+     complaining. E.g. if [type ('a, 'b) t = 'a option], then the _get_b and _apply_b
      functions will be ignored *)
   let text =
     match String.chop_suffix t ~suffix:"_exn" with
