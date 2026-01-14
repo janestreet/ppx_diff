@@ -1,4 +1,4 @@
-(* For a variant such as
+(*=For a variant such as
 
    {[ type derived_on =
         | A
@@ -43,27 +43,30 @@ end
 
    E.g. for
 
-   {[ type t =
-        | A of { foo : int }
-        | B
+   {[
+     type t =
+       | A of { foo : int }
+       | B
    ]}
 
    we'll generate a helper module
 
-   {[ module A_record = struct
-        type t = { foo : int }
+   {[
+     module A_record = struct
+       type t = { foo : int }
 
-        module Diff = struct
-          (* some diff functions here *)
-        end
-      end
+       module Diff = struct
+         (* some diff functions here *)
+       end
+     end
    ]}
 
    But for
 
-   {[ type t =
-        | A of { foo : int }
-        | B of A_record.t
+   {[
+     type t =
+       | A of { foo : int }
+       | B of A_record.t
    ]}
 
    that would cause a name collisions.
@@ -148,8 +151,9 @@ module Row : sig
     (* Helper representing the type actually used by [core_diff]. Will look like:
 
        1. [txt]
-       2. local_ (t1, t2, ...) Tuples.TupleN.For_inlined_tuple.t = local_ ( { global = txt1 }, { global = txt2 }, ...)
-       3. local_ { R_record.field_a = txt_a ; field_b = txt_b }
+       2. local_ (t1, t2, ...) Tuples.TupleN.For_inlined_tuple.t = local_ (
+          [{ global = txt1 }], [{ global = txt2 }], ...)
+       3. local_ [{ R_record.field_a = txt_a ; field_b = txt_b }]
 
        (For [2] and [3] the local_ keyword is only used for expresions, not for patterns.)
     *)
@@ -224,9 +228,10 @@ end = struct
            | Inlined_record record_fields ->
              (* Create an additional module, which is effectively
 
-                {[ module R_record = struct
-                     type t = { global_ field_a : t_a ; global_ field_b : t_b ; ... } [@deriving diff]
-                   end
+                {[
+                  module R_record = struct
+                    type t = { global_ field_a : t_a ; global_ field_b : t_b ; ... } [@deriving diff]
+                  end
                 ]}
 
                 and use it as prefix
@@ -268,7 +273,7 @@ end = struct
                Items.concat [ td_items; items ]
                |> Items.to_module ~module_name:record_module_name ~builder
              in
-             (* And then the [Core_diff] is:
+             (*=And then the [Core_diff] is:
 
                 type t = R_record.Diff.t
                 let get = R_record.Diff.get
@@ -423,8 +428,8 @@ end
 
    it's not possible for [get] to return the [Set] case
 
-   For [1] the diff will always be empty
-   For [2] if it's not empty it'll always be [Diff_foo]
+   For [1] the diff will always be empty For [2] if it's not empty it'll always be
+   [Diff_foo]
 *)
 let can_get_set_case rows =
   match rows with
@@ -486,7 +491,7 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
   let diff_case row =
     case
       ~lhs:
-        (* Could be:
+        (*=Could be:
            | A, A
            | B from, B to_
            | T (from1, from2, ...), T (to_1, to_2, ...)
@@ -499,12 +504,12 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
       ~rhs:
         (match Row.diff row with
          | None ->
-           (* The | A, A case *)
+           (*=The | A, A case *)
            [%expr Optional_diff.get_none ()]
          | Some diff ->
-           (* B: d = get_B ~from ~to_
-              T: d = get_T ~from:(local_ ({ global = from1 }, ...)) ~to_:...
-              R: d = get_R ~from:(local_ { field_a = from_a;...}) ~to_:...
+           (* B: d = get_B ~from ~to_ T: d = get_T ~from:(local_ ([{ global = from1 }],
+              ...)) ~to_:... R: d = get_R ~from:(local_ [{ field_a = from_a;...}])
+              ~to_:...
            *)
            let d =
              [%expr
@@ -514,7 +519,7 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
            in
            [%expr
              Optional_diff.map [%e d] ~f:(fun diff ->
-               (* Diff_B diff | Diff_T diff | Diff_R diff *)
+               (*=Diff_B diff | Diff_T diff | Diff_R diff *)
                [%e Row.get_row row mp Diff Prefix.diff |> e])])
   in
   let set_case row =
@@ -524,16 +529,14 @@ let get ~builder ~rows ~maybe_polymorphic:mp =
       Some
         (case
            ~lhs:
-             (* _, B to_
-                _, T (to_1, to_2, ...)
-                _, R { field_a = to_a ; field_b = to_b ;  ... }
+             (* _, B to_ _, T (to_1, to_2, ...) _, R
+                [{ field_a = to_a ; field_b = to_b ;  ... }]
              *)
              [%pat? _, [%p Row.get_row row mp Derived_on Prefix.to_ |> p]]
            ~guard:None
            ~rhs:
-             (* Set_B to_
-                Set_T (to_1, to_2)
-                Set_R { field_a = to_a ; field_b = to_b ; ... } *)
+             (* Set_B to_ Set_T (to_1, to_2) Set_R
+                [{ field_a = to_a ; field_b = to_b ; ... }] *)
              [%expr Optional_diff.return [%e Row.get_row row mp Set Prefix.to_ |> e]])
   in
   List.fold
@@ -579,7 +582,7 @@ let apply_exn ~rows ~builder ~maybe_polymorphic:mp =
         Some
           (case
              ~lhs:
-               (* _, Set_A
+               (*=_, Set_A
                   _, Set_B to_
                   _, Set_T (to_1, to_2, ...)
                   _, Set_R { field_a = to_a ; field_b = to_b ; ... }
@@ -587,7 +590,7 @@ let apply_exn ~rows ~builder ~maybe_polymorphic:mp =
                [%pat? _, [%p Row.get_row row mp Set Prefix.to_ |> p]]
              ~guard:None
              ~rhs:
-               (* A
+               (*=A
                   B to_
                   T (to_1, to_2, ...)
                   R {field_a = to_a ; field_b = to_b ; ... }
@@ -602,7 +605,7 @@ let apply_exn ~rows ~builder ~maybe_polymorphic:mp =
         Some
           (case
              ~lhs:
-               (* | B derived_on, Diff_B diff
+               (*=| B derived_on, Diff_B diff
                   | T (derived_on1, derived_on2, ...), Diff_T diff
                   | R { field_a = derived_on_a ; ... }, Diff_R diff
                *)
@@ -612,18 +615,24 @@ let apply_exn ~rows ~builder ~maybe_polymorphic:mp =
              ~guard:None
              ~rhs:
                [%expr
-                 (* {[let to_b = apply_b derived_on diff in to_b]}
-                     OR
-                     {[let ({ global = to_1 }, { global = to_2 }, ...) =
-                         apply_t (local_ ({ global = derived_on1 } , { global = derived_on2 }, ....)) diff
-                       in
-                       T (to_1, to_2, ...)
-                     ]}
-                     OR
-                     {[let { R_record.field_a = to_a ; ... } =
-                         apply_r (local_ { R_record.field_a = derived_on_a ; ... }) diff
-                       in
-                       R { field_a = to_a ; ... }]}
+                 (* {[
+                      let to_b = apply_b derived_on diff in
+                      to_b
+                    ]}
+                    OR
+                    {[
+                      let ({ global = to_1 }, { global = to_2 }, ...) =
+                        apply_t (local_ ({ global = derived_on1 } , { global = derived_on2 }, ....)) diff
+                      in
+                      T (to_1, to_2, ...)
+                    ]}
+                    OR
+                    {[
+                      let { R_record.field_a = to_a ; ... } =
+                        apply_r (local_ { R_record.field_a = derived_on_a ; ... }) diff
+                      in
+                      R { field_a = to_a ; ... }
+                    ]}
                  *)
                  let [%p Row.Row_diff.derived_on type_ mp Prefix.to_ |> p] =
                    [%e Row.function_name row Function_name.apply_exn |> e]
@@ -707,7 +716,7 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
   let prefix = Prefix.of_string in
   let any = prefix "_" in
   let diff_variant_name variant =
-    (* match variant with
+    (*=match variant with
        | Set_to_a -> "Set_to_a"
        | Diff_b _ -> "Diff_b"
        ...
@@ -733,7 +742,7 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
     case ~lhs:[%pat? t] ~rhs:error
   in
   let unpack_diffs row ~for_:which =
-    (* Get all [Diff]s of a given variant:
+    (*=Get all [Diff]s of a given variant:
 
        function
        | Diff_b d -> d
@@ -782,8 +791,8 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
            let derived_on ?skip_local () =
              Row.Row_diff.derived_on type_ mp ?skip_local Prefix.to_
            in
-           (* List.fold (unpack_diffs diffs) ~init:to_ ~f:(fun acc diff ->
-              apply_exn_B acc diff)
+           (* List.fold (unpack_diffs diffs) ~init:to_ ~f:(fun acc diff -> apply_exn_B acc
+              diff)
            *)
            [%expr
              let diffs = Base.List.map diffs ~f:[%e unpack_diffs] in
@@ -841,7 +850,7 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
                  @ (if List.is_empty diff_rows
                     then []
                     else
-                      [ case (* the first elt in [rest_rev] can't be a [Diff _]  *)
+                      [ case (* the first elt in [rest_rev] can't be a [Diff _] *)
                           ~lhs:
                             [%pat? [%p any_row (List.map diff_rows ~f:fst) Diff] :: _, _]
                           ~rhs:[%expr assert false]
@@ -849,7 +858,7 @@ let of_list ~rows ~maybe_polymorphic:mp ~builder =
                  @ (if List.is_empty set_rows
                     then []
                     else
-                      [ case (* [diffs] don't contain a [Set _]  *)
+                      [ case (* [diffs] don't contain a [Set _] *)
                           ~lhs:[%pat? _, [%p any_row set_rows Set] :: _]
                           ~rhs:[%expr assert false]
                       ; case (* [Set _] followed by no diffs, just return the [Set _] *)

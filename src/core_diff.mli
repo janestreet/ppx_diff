@@ -16,8 +16,8 @@ val diff_type : t -> unit Type_kind.core_kind
 val to_diff : t -> Diff.t
 
 module Create : sig
-  (* Note that there is only one instantiation of this type, but we factor it out as a type
-     to break an otherwise complicated recursive function. Doing so allows us to split up
-     our diff-generating code across multiple files. *)
+  (* Note that there is only one instantiation of this type, but we factor it out as a
+     type to break an otherwise complicated recursive function. Doing so allows us to
+     split up our diff-generating code across multiple files. *)
   type nonrec t = How_to_diff.t Type_kind.core -> t
 end

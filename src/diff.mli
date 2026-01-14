@@ -22,7 +22,11 @@ module Diff_type_kind : sig
 
          Example:
          {[
-           type derived_on = { foo : int; bar : string }
+           type derived_on =
+             { foo : int
+             ; bar : string
+             }
+
            type single =
              | Foo of Diff_of_int.t
              | Bar of Diff_of_string.t

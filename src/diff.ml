@@ -51,9 +51,8 @@ module Functions = struct
       let derived_on_modes =
         if derived_on_type_is_local then Modes.local ~loc else Modes.none
       in
-      (* Generate the parametrized functions, e.g.
-         (from:'a -> to_:'a -> local_ 'a_diff Optional_diff.t)
-         (from:'b -> to_:'b -> local_ 'b_diff Optional_diff.t)
+      (* Generate the parametrized functions, e.g. (from:'a -> to_:'a -> local_ 'a_diff
+         Optional_diff.t) (from:'b -> to_:'b -> local_ 'b_diff Optional_diff.t)
       *)
       Jane_ast.tarrow_maybe
         (List.concat_map vars ~f:(fun var ->
@@ -381,8 +380,8 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
           then [%str let t_of_sexp = [%e t_of_sexp]]
           else []
         in
-        (* Since the type is private, we also expose a [of_single_list_exn] function, and we need
-           to override [t_of_sexp] (if one exists) *)
+        (* Since the type is private, we also expose a [of_single_list_exn] function, and
+           we need to override [t_of_sexp] (if one exists) *)
         { Items.sig_items; struct_items = Ok struct_items }
       in
       ( diff_type_declaration
@@ -428,8 +427,8 @@ let to_items t ~context ~(type_to_diff_declaration : unit Type_declaration.t) =
       let { Items.sig_items; struct_items } = items in
       let struct_items =
         Result.map struct_items ~f:(fun struct_items ->
-          (* Add a signature in the [ml] as well in the private case. Otherwise, users would
-             be able to create illegal diffs in the ml. *)
+          (* Add a signature in the [ml] as well in the private case. Otherwise, users
+             would be able to create illegal diffs in the ml. *)
           let structure = pmod_structure struct_items in
           let module_expr =
             pmod_constraint

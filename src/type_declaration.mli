@@ -2,9 +2,7 @@
 
    in [type ('a, 'b) t = 'a option]:
 
-   [params = ['a ; 'b]]
-   [name = t]
-   [kind = 'a option]
+   [params = ['a ; 'b]] [name = t] [kind = 'a option]
 *)
 open! Base
 open Ppxlib
