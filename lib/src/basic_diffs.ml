@@ -40,7 +40,7 @@ module Diff_of_float = Make_atomic_with_extra_deriving (struct
        - [Float.compare Float.nan Float.nan = 0] The latter makes more sense for diffs
     *)
     let equal = [%compare.equal: t]
-    let%template[@mode local] equal = [%compare_local.equal: t]
+    let%template[@mode local] equal = ([%compare.equal: t] [@mode local])
   end)
 
 module Diff_of_int = Make_atomic_with_extra_deriving (struct
