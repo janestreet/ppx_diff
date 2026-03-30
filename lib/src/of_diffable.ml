@@ -6,7 +6,7 @@ module type Conv = sig
   val of_diffable : diffable -> t
 end
 
-module Make_plain
+module%template.portable Make_plain
     (Diffable : Diffable_intf.S_plain)
     (M : Conv with type diffable = Diffable.t) :
   Diffable_intf.S_plain with type t := M.t and type Diff.t = Diffable.Diff.t = struct
@@ -29,9 +29,12 @@ module Make_plain
   end
 end
 
-module Make (Diffable : Diffable_intf.S) (M : Conv with type diffable = Diffable.t) :
+module%template.portable
+  [@modality p] Make
+    (Diffable : Diffable_intf.S)
+    (M : Conv with type diffable = Diffable.t) :
   Diffable_intf.S with type t := M.t and type Diff.t = Diffable.Diff.t = struct
-  module Plain = Make_plain (Diffable) (M)
+  module Plain = Make_plain [@modality p] (Diffable) (M)
 
   module Diff = struct
     include Diffable.Diff

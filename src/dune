@@ -5,4 +5,5 @@
  (libraries base diffable ppxlib ppxlib_jane)
  (ppx_runtime_libraries ppx_diff.diffable)
  (preprocess
-  (pps ppx_enumerate ppx_compare ppxlib.metaquot)))
+  (pps ppx_enumerate ppx_compare ppx_template ppxlib.metaquot
+    -compare-require-explicit-locality)))
