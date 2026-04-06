@@ -1,5 +1,5 @@
 open Base
-include Identifiable.S
+include Identifiable.S [@mode local]
 
 val get : t
 val apply_exn : t

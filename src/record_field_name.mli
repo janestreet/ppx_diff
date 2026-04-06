@@ -1,2 +1,2 @@
 open Base
-include Identifiable.S
+include Identifiable.S [@mode local]

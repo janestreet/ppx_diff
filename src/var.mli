@@ -4,7 +4,7 @@ open! Ppxlib
 
 type t
 
-include Comparable.S with type t := t
+include Comparable.S [@mode local] with type t := t
 include Stringable.S with type t := t
 
 val core_type : t -> builder:Builder.t -> core_type

@@ -4,7 +4,7 @@ open Base
 [@@@mode.default m = (local, global)]
 
 module%template.portable Make_base_diff (M : sig
-    type t [@@deriving equal [@mode m]]
+    type t [@@deriving equal [@mode.explicit m]]
   end) =
 struct
   let[@inline] get ~from ~to_ = exclave_
@@ -23,29 +23,29 @@ end
 
 module%template.portable
   [@modality p] Make_diff_plain (M : sig
-    type t [@@deriving equal [@mode m]]
+    type t [@@deriving equal [@mode.explicit m]]
   end) =
 struct
   type derived_on = M.t
-  type t = M.t [@@deriving equal [@mode m]]
+  type t = M.t [@@deriving equal [@mode.explicit m]]
 
   include Make_base_diff [@mode m] [@modality p] (M)
 end
 
 module%template.portable
   [@modality p] Make_diff (M : sig
-    type t [@@deriving sexp, bin_io, (equal [@mode m])]
+    type t [@@deriving sexp, bin_io, (equal [@mode.explicit m])]
   end) =
 struct
   type derived_on = M.t
-  type t = M.t [@@deriving sexp, bin_io, (equal [@mode m])]
+  type t = M.t [@@deriving sexp, bin_io, (equal [@mode.explicit m])]
 
   include Make_base_diff [@mode m] [@modality p] (M)
 end
 
 module%template.portable
   [@modality p] Make_plain (M : sig
-    type t [@@deriving equal [@mode m]]
+    type t [@@deriving equal [@mode.explicit m]]
   end) =
 struct
   module Diff = Make_diff_plain [@mode m] [@modality p] (M)
@@ -53,7 +53,7 @@ end
 
 module%template.portable
   [@modality p] Make (M : sig
-    type t [@@deriving (equal [@mode m]), sexp, bin_io]
+    type t [@@deriving (equal [@mode.explicit m]), sexp, bin_io]
   end) =
 struct
   module Diff = Make_diff [@mode m] [@modality p] (M)

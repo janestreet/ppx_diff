@@ -1,5 +1,5 @@
 open Base
-include Identifiable.S
+include Identifiable.S [@mode local]
 
 val diff_module_name : type_to_diff_name:Type_name.t -> t
 
