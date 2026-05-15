@@ -654,6 +654,28 @@ type t =
 `atomic_using_compare` does not work in mlis/signatures, just continue using `atomic`
 there - the generated signature is exactly the same
 
+### Local atomic variants
+
+The `atomic.local` and `atomic_using_compare.local` attributes work the same way as
+`atomic` and `atomic_using_compare`, but generate calls to local-accepting equality
+functions (`[%equal__local: ...]` and `[%compare.equal__local: ...]` respectively).
+
+E.g. the following will work:
+
+```ocaml
+type t = Some_type.t [@@deriving compare, diff ~how:"atomic_using_compare.local"]
+```
+
+```ocaml
+type t =
+  { start : Some_type.t [@diff.atomic_using_compare.local]
+  ; stop : Some_type.t [@diff.atomic.local]
+  }
+[@@deriving diff]
+```
+
+These are only relevant when using OxCaml.
+
 ### Atomic parametrized types
 
 The `atomic` and `atomic_using_compare` attributes do not work for parametrized types
