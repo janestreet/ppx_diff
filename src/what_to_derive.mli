@@ -8,9 +8,10 @@ module Entry : sig
   val of_sexp : t
   val sexp : t
   val bin_io : t
-  val compare : t
-  val equal : t
+  val compare_ : t
+  val equal_ : t
   val variants : t
+  val to_string : t -> string
 end
 
 module Extra : sig

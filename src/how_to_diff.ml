@@ -4,7 +4,9 @@ open Ppxlib
 module Atomic = struct
   type t =
     | Using_equal
+    | Using_equal_local
     | Using_compare
+    | Using_compare_local
     | Using_equal_via_get
   [@@deriving enumerate, equal ~localize, compare ~localize]
 
@@ -12,7 +14,9 @@ module Atomic = struct
     let suffix =
       match t with
       | Using_equal -> ""
+      | Using_equal_local -> ".local"
       | Using_compare -> "_using_compare"
+      | Using_compare_local -> "_using_compare.local"
       | Using_equal_via_get -> "_via_get"
     in
     "atomic" ^ suffix

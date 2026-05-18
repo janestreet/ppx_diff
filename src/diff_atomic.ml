@@ -19,7 +19,7 @@ let validate (atomic : How_to_diff.Atomic.t) ~vars ~builder ~sig_or_struct =
   | `sig_ ->
     (match atomic with
      | Using_equal -> ()
-     | Using_equal_via_get | Using_compare ->
+     | Using_equal_via_get | Using_compare | Using_compare_local | Using_equal_local ->
        let open (val builder : Builder.S) in
        let not_supported = How_to_diff.Atomic.to_string atomic in
        let supported = How_to_diff.Atomic.to_string Using_equal in
@@ -32,7 +32,8 @@ let validate (atomic : How_to_diff.Atomic.t) ~vars ~builder ~sig_or_struct =
             not_supported))
   | `struct_ ->
     (match vars, atomic with
-     | [], (Using_equal | Using_compare) | _ :: _, Using_equal_via_get -> ()
+     | [], (Using_equal | Using_equal_local | Using_compare | Using_compare_local)
+     | _ :: _, Using_equal_via_get -> ()
      | [], Using_equal_via_get ->
        let open (val builder : Builder.S) in
        raise_error
@@ -41,7 +42,7 @@ let validate (atomic : How_to_diff.Atomic.t) ~vars ~builder ~sig_or_struct =
             (to_string Using_equal_via_get)
             (to_string Using_equal)
             (to_string Using_compare))
-     | _ :: _, (Using_equal | Using_compare) ->
+     | _ :: _, (Using_equal | Using_equal_local | Using_compare | Using_compare_local) ->
        let open (val builder : Builder.S) in
        raise_error
          (Printf.sprintf
@@ -59,7 +60,9 @@ let create_functions kind ~atomic ~sig_or_struct ~builder =
     let type_ = Type_kind.core_to_ppx kind ~builder in
     match atomic with
     | Using_compare -> [%expr [%compare.equal: [%t type_]]]
+    | Using_compare_local -> [%expr [%compare.equal__local: [%t type_]]]
     | Using_equal | Using_equal_via_get -> [%expr [%equal: [%t type_]]]
+    | Using_equal_local -> [%expr [%equal__local: [%t type_]]]
   in
   let get =
     List.fold

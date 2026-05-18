@@ -9,17 +9,66 @@ module Entry = struct
   let sexp = "sexp"
   let bin_io = "bin_io"
   let variants = "variants"
-  let equal = "equal"
-  let compare = "compare"
+  let equal_ = "equal"
+  let compare_ = "compare"
+end
+
+module Entry_maybe_localize : sig
+  type t
+
+  val create : base_name:string -> t
+  val equal_localize : t
+  val compare_localize : t
+  val base_name : t -> string
+  val to_deriving_expression : t -> builder:Builder.t -> expression
+end = struct
+  type t =
+    | Simple of Entry.t
+    | Equal_localize
+    | Compare_localize
+
+  let create ~base_name = Simple base_name
+
+  let base_name = function
+    | Simple x -> x
+    | Equal_localize -> Entry.equal_
+    | Compare_localize -> Entry.compare_
+  ;;
+
+  let localize = function
+    | Simple _ -> false
+    | Equal_localize | Compare_localize -> true
+  ;;
+
+  let equal_localize = Equal_localize
+  let compare_localize = Compare_localize
+
+  let to_deriving_expression t ~builder =
+    let open (val builder : Builder.S) in
+    let localize_entry base_name =
+      pexp_apply
+        (pexp_ident (Located.mk (Lident base_name)))
+        [ Labelled "localize", pexp_ident (Located.mk (Lident "localize")) ]
+    in
+    let base_name = base_name t in
+    if localize t then localize_entry base_name else Build_helper.Text base_name |> e
+  ;;
 end
 
 let attribute_name = "deriving"
 
-type t = Entry.t list
+type t = Entry_maybe_localize.t list
 
 let empty = []
-let add t entry = if List.exists t ~f:(Entry.( = ) entry) then t else t @ [ entry ]
-let mem = List.mem ~equal:String.equal
+
+let mem (t : t) (entry : Entry.t) =
+  List.exists t ~f:(fun existing ->
+    String.( = ) (Entry_maybe_localize.base_name existing) entry)
+;;
+
+let add (t : t) (entry : Entry.t) =
+  if mem t entry then t else t @ [ Entry_maybe_localize.create ~base_name:entry ]
+;;
 
 module Extra = struct
   type t = Entry.t list
@@ -69,16 +118,21 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
             | _ -> [])))
   in
   let default =
-    List.filter
-      deriving
-      ~f:(Set.mem Entry.(Set.of_list (module Entry) [ sexp_of; of_sexp; sexp; bin_io ]))
+    (List.filter
+       deriving
+       ~f:(Set.mem Entry.(Set.of_list (module Entry) [ sexp_of; of_sexp; sexp; bin_io ]))
+     |> List.map ~f:(fun base_name -> Entry_maybe_localize.create ~base_name))
     @
     match (how_to_diff : How_to_diff.Atomic.t option), sig_or_struct with
     | None, _ | _, `sig_ -> []
     | Some atomic, `struct_ ->
-      (match atomic with
-       | Using_equal | Using_equal_via_get -> [ Entry.equal ]
-       | Using_compare -> [ Entry.compare ])
+      [ (match atomic with
+         | Using_equal | Using_equal_via_get ->
+           Entry_maybe_localize.create ~base_name:Entry.equal_
+         | Using_equal_local -> Entry_maybe_localize.equal_localize
+         | Using_compare -> Entry_maybe_localize.create ~base_name:Entry.compare_
+         | Using_compare_local -> Entry_maybe_localize.compare_localize)
+      ]
   in
   match List.find_all_dups extra ~compare:String.compare with
   | [] ->
@@ -101,15 +155,14 @@ let create ?extra (td : type_declaration) how_to_diff sig_or_struct ~builder =
 
 let attribute t ~builder =
   let open (val builder : Builder.S) in
-  let open Build_helper in
   let what_to_derive =
-    match List.map t ~f:(fun entry -> Text (Entry.to_string entry)) with
+    match List.map t ~f:(Entry_maybe_localize.to_deriving_expression ~builder) with
     | [] -> None
     | [ x ] -> Some x
-    | xs -> Some (Tuple xs)
+    | xs -> Some (pexp_tuple xs)
   in
   Option.map what_to_derive ~f:(fun what_to_derive ->
     attribute
       ~name:(Located.mk attribute_name)
-      ~payload:(PStr [ pstr_eval (e what_to_derive) [] ]))
+      ~payload:(PStr [ pstr_eval what_to_derive [] ]))
 ;;

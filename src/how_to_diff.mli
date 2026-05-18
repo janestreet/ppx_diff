@@ -16,7 +16,9 @@ end
 module Atomic : sig
   type t =
     | Using_equal
+    | Using_equal_local
     | Using_compare
+    | Using_compare_local
     | Using_equal_via_get
 
   val to_string : t -> string
