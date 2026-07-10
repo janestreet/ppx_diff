@@ -4,14 +4,14 @@ open Printf
 let module_name ~size = sprintf "Tuple%i" size
 let diff_module_name = "Diff"
 let entry_diff_module_name = "Entry_diff"
-let for_inlined_tuple_module_name = "For_inlined_tuple"
+let local_module_name = "Local"
 let nums ~size = List.init size ~f:(( + ) 1)
 let var i = sprintf "'a%i" i
 let diff_var i = var i ^ "_diff"
 let create_arg i = sprintf "t%i" i
 let gel i = sprintf "%s Modes.Global.t" (var i)
 let vars ~size = List.map (nums ~size) ~f:var
-let diff_vars ~size = vars ~size @ List.map (nums ~size) ~f:diff_var
+let diff_vars ~size = List.map (nums ~size) ~f:diff_var
 
 let type_ ~name ~vars ~size =
   sprintf "(%s) %s" (String.concat (vars ~size) ~sep:", ") name
@@ -49,17 +49,17 @@ let diff_type_declarations ~size ~signature =
       end
       %{maybe_open_entry_diff}
 
-      type %{diff_type ~size} =%{maybe_private} %{entry_diff_type ~size} list [@@deriving sexp, bin_io, quickcheck]
+      type %{diff_type ~size } =%{maybe_private} %{entry_diff_type ~size} list [@@deriving sexp, bin_io, quickcheck]
 
 |}]
 ;;
 
-let for_inlined_tuple_type_declaration ~size =
+let local_type_declaration ~size =
   [%string
     {| type %{t_type ~size} = %{List.map (nums ~size) ~f:gel |> String.concat ~sep:" * "} [@@deriving sexp, bin_io]|}]
 ;;
 
-let for_inlined_tuple_diff_type_declarations ~size =
+let local_diff_type_declarations ~size =
   [%string
     {|
       type %{derived_on_type ~size} = %{t_type ~size}
@@ -75,7 +75,7 @@ let tuple_mli size =
   let get_functions =
     List.map nums ~f:(fun i ->
       [%string
-        {|(from: %{var i} -> to_: %{var i} -> local_ %{diff_var i} Optional_diff.t)|}])
+        {|(from: %{var i} -> to_: %{var i} -> %{diff_var i} Optional_diff.t @ local)|}])
     |> String.concat ~sep:"\n -> "
   in
   let apply_functions' =
@@ -84,24 +84,20 @@ let tuple_mli size =
   let apply_functions = apply_functions' |> String.concat ~sep:"\n -> " in
   let of_list_functions' =
     List.map nums ~f:(fun i ->
-      [%string {|(%{diff_var i} list -> local_ %{diff_var i} Optional_diff.t)|}])
+      [%string {|(%{diff_var i} list -> %{diff_var i} Optional_diff.t @ local)|}])
   in
-  let of_list_and_apply_functions =
-    List.zip_exn of_list_functions' apply_functions'
-    |> List.concat_map ~f:(fun (x, y) -> [ x; y ])
-    |> String.concat ~sep:"\n -> "
-  in
+  let of_list_functions = of_list_functions' |> String.concat ~sep:"\n -> " in
   let function_declarations ~local =
     let derived_on_type =
-      if local then sprintf "local_ %s" derived_on_type else derived_on_type
+      if local then sprintf "%s @ local" derived_on_type else derived_on_type
     in
     [%string
       {|
-        val get : %{get_functions} -> from: %{derived_on_type} -> to_: %{derived_on_type} -> local_ %{diff_type} Optional_diff.t
+        val get : %{get_functions} -> from: %{derived_on_type} -> to_: %{derived_on_type} -> %{diff_type} Optional_diff.t @ local
 
         val apply_exn : %{apply_functions} -> %{derived_on_type} -> %{diff_type} -> %{derived_on_type}
 
-        val of_list_exn : %{of_list_and_apply_functions} -> %{diff_type} list -> local_ %{diff_type} Optional_diff.t
+        val of_list_exn : %{of_list_functions} -> %{diff_type} list -> %{diff_type} Optional_diff.t @ local
          |}]
   in
   let create_args ~optional =
@@ -114,7 +110,7 @@ let tuple_mli size =
   let create_of_variants_args =
     List.map nums ~f:(fun i ->
       [%string
-        {|%{create_arg i}:local_ ((%{diff_var i}, %{entry_diff_type ~size}) Of_variant.t) |}])
+        {|%{create_arg i}:((%{diff_var i}, %{entry_diff_type ~size}) Of_variant.t) @ local |}])
     |> String.concat ~sep:" -> "
   in
   [%string
@@ -131,13 +127,14 @@ let tuple_mli size =
         val create : %{create_args ~optional:true} -> unit -> %{diff_type}
 
         val create_of_variants : %{create_of_variants_args} -> %{diff_type}
+
       end
 
-      module %{for_inlined_tuple_module_name} : sig
-        %{for_inlined_tuple_type_declaration ~size}
+      module %{local_module_name} : sig
+        %{local_type_declaration ~size}
 
         module %{diff_module_name} : sig
-          %{for_inlined_tuple_diff_type_declarations ~size}
+          %{local_diff_type_declarations ~size}
           %{function_declarations ~local:true}
         end
       end
@@ -177,9 +174,7 @@ let tuple_ml size =
        |}]
   in
   let of_sexp_functions =
-    List.map nums ~f:(sprintf "a%i_of_sexp")
-    @ List.map nums ~f:(sprintf "a%i_diff_of_sexp")
-    |> String.concat ~sep:" "
+    List.map nums ~f:(sprintf "a%i_diff_of_sexp") |> String.concat ~sep:" "
   in
   let create_args ~optional =
     List.map nums ~f:(fun i ->
@@ -259,14 +254,11 @@ let tuple_ml size =
           | _ :: _ -> failwith "BUG: non-empty diff after apply"
         |}]
   in
-  let of_list_and_apply_functions =
-    List.concat_map nums ~f:(fun x -> [ of_list x; sprintf "_%s" (apply x) ])
-    |> String.concat ~sep:" "
-  in
+  let of_list_functions = List.map nums ~f:of_list |> String.concat ~sep:" " in
   let of_list_function =
     [%string
       {|
-      let of_list_exn %{of_list_and_apply_functions} ts = exclave_
+      let of_list_exn %{of_list_functions} ts = exclave_
         match ts with
         | [] -> Optional_diff.get_none ()
         | _ :: _ ->
@@ -316,13 +308,14 @@ let tuple_ml size =
 
         let create_of_variants %{create_args ~optional:false} =
            %{create_function ~value:create_arg_of_variant `optional_diff}
+
       end
 
-      module %{for_inlined_tuple_module_name} = struct
-        %{for_inlined_tuple_type_declaration ~size}
+      module %{local_module_name} = struct
+        %{local_type_declaration ~size}
 
         module %{diff_module_name} = struct
-          %{for_inlined_tuple_diff_type_declarations ~size}
+          %{local_diff_type_declarations ~size}
           open %{diff_module_name}
           open %{entry_diff_module_name}
           %{function_implementations ~local:true}

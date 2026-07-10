@@ -151,8 +151,8 @@ module Row : sig
     (* Helper representing the type actually used by [core_diff]. Will look like:
 
        1. [txt]
-       2. local_ (t1, t2, ...) Tuples.TupleN.For_inlined_tuple.t = local_ (
-          [{ global = txt1 }], [{ global = txt2 }], ...)
+       2. local_ (t1, t2, ...) Tuples.TupleN.Local.t = local_ ( [{ global = txt1 }],
+          [{ global = txt2 }], ...)
        3. local_ [{ R_record.field_a = txt_a ; field_b = txt_b }]
 
        (For [2] and [3] the local_ keyword is only used for expresions, not for patterns.)
