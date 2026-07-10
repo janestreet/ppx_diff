@@ -25,7 +25,7 @@ module Tuple2 = struct
     type ('a1, 'a2) derived_on = ('a1, 'a2) t
 
     module Entry_diff = struct
-      type ('a1, 'a2, 'a1_diff, 'a2_diff) t =
+      type ('a1_diff, 'a2_diff) t =
         | T1 of 'a1_diff
         | T2 of 'a2_diff
       [@@deriving variants, sexp, bin_io, quickcheck]
@@ -33,8 +33,7 @@ module Tuple2 = struct
 
     open Entry_diff
 
-    type ('a1, 'a2, 'a1_diff, 'a2_diff) t =
-      ('a1, 'a2, 'a1_diff, 'a2_diff) Entry_diff.t list
+    type ('a1_diff, 'a2_diff) t = ('a1_diff, 'a2_diff) Entry_diff.t list
     [@@deriving sexp, bin_io, quickcheck]
 
     let compare_rank t1 t2 =
@@ -84,7 +83,7 @@ module Tuple2 = struct
       | _ :: _ -> failwith "BUG: non-empty diff after apply"
     ;;
 
-    let of_list_exn of_list1_exn _apply1_exn of_list2_exn _apply2_exn ts = exclave_
+    let of_list_exn of_list1_exn of_list2_exn ts = exclave_
       match ts with
       | [] -> Optional_diff.get_none ()
       | _ :: _ ->
@@ -127,10 +126,9 @@ module Tuple2 = struct
 
     let singleton entry_diff = [ entry_diff ]
 
-    let t_of_sexp a1_of_sexp a2_of_sexp a1_diff_of_sexp a2_diff_of_sexp sexp =
+    let t_of_sexp a1_diff_of_sexp a2_diff_of_sexp sexp =
       let l =
-        t_of_sexp a1_of_sexp a2_of_sexp a1_diff_of_sexp a2_diff_of_sexp sexp
-        |> List.sort ~compare:compare_rank
+        t_of_sexp a1_diff_of_sexp a2_diff_of_sexp sexp |> List.sort ~compare:compare_rank
       in
       match List.find_consecutive_duplicate l ~equal:equal_rank with
       | None -> l
@@ -169,13 +167,13 @@ module Tuple2 = struct
     ;;
   end
 
-  module For_inlined_tuple = struct
+  module Local = struct
     type ('a1, 'a2) t = 'a1 Modes.Global.t * 'a2 Modes.Global.t [@@deriving sexp, bin_io]
 
     module Diff = struct
       type ('a1, 'a2) derived_on = ('a1, 'a2) t
 
-      type ('a1, 'a2, 'a1_diff, 'a2_diff) t = ('a1, 'a2, 'a1_diff, 'a2_diff) Diff.t
+      type ('a1_diff, 'a2_diff) t = ('a1_diff, 'a2_diff) Diff.t
       [@@deriving sexp, bin_io, quickcheck]
 
       open Diff
@@ -232,7 +230,7 @@ module Tuple3 = struct
     type ('a1, 'a2, 'a3) derived_on = ('a1, 'a2, 'a3) t
 
     module Entry_diff = struct
-      type ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t =
+      type ('a1_diff, 'a2_diff, 'a3_diff) t =
         | T1 of 'a1_diff
         | T2 of 'a2_diff
         | T3 of 'a3_diff
@@ -241,8 +239,8 @@ module Tuple3 = struct
 
     open Entry_diff
 
-    type ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t =
-      ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t list
+    type ('a1_diff, 'a2_diff, 'a3_diff) t =
+      ('a1_diff, 'a2_diff, 'a3_diff) Entry_diff.t list
     [@@deriving sexp, bin_io, quickcheck]
 
     let compare_rank t1 t2 =
@@ -302,15 +300,7 @@ module Tuple3 = struct
       | _ :: _ -> failwith "BUG: non-empty diff after apply"
     ;;
 
-    let of_list_exn
-      of_list1_exn
-      _apply1_exn
-      of_list2_exn
-      _apply2_exn
-      of_list3_exn
-      _apply3_exn
-      ts
-      = exclave_
+    let of_list_exn of_list1_exn of_list2_exn of_list3_exn ts = exclave_
       match ts with
       | [] -> Optional_diff.get_none ()
       | _ :: _ ->
@@ -367,24 +357,9 @@ module Tuple3 = struct
 
     let singleton entry_diff = [ entry_diff ]
 
-    let t_of_sexp
-      a1_of_sexp
-      a2_of_sexp
-      a3_of_sexp
-      a1_diff_of_sexp
-      a2_diff_of_sexp
-      a3_diff_of_sexp
-      sexp
-      =
+    let t_of_sexp a1_diff_of_sexp a2_diff_of_sexp a3_diff_of_sexp sexp =
       let l =
-        t_of_sexp
-          a1_of_sexp
-          a2_of_sexp
-          a3_of_sexp
-          a1_diff_of_sexp
-          a2_diff_of_sexp
-          a3_diff_of_sexp
-          sexp
+        t_of_sexp a1_diff_of_sexp a2_diff_of_sexp a3_diff_of_sexp sexp
         |> List.sort ~compare:compare_rank
       in
       match List.find_consecutive_duplicate l ~equal:equal_rank with
@@ -434,15 +409,14 @@ module Tuple3 = struct
     ;;
   end
 
-  module For_inlined_tuple = struct
+  module Local = struct
     type ('a1, 'a2, 'a3) t = 'a1 Modes.Global.t * 'a2 Modes.Global.t * 'a3 Modes.Global.t
     [@@deriving sexp, bin_io]
 
     module Diff = struct
       type ('a1, 'a2, 'a3) derived_on = ('a1, 'a2, 'a3) t
 
-      type ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) t =
-        ('a1, 'a2, 'a3, 'a1_diff, 'a2_diff, 'a3_diff) Diff.t
+      type ('a1_diff, 'a2_diff, 'a3_diff) t = ('a1_diff, 'a2_diff, 'a3_diff) Diff.t
       [@@deriving sexp, bin_io, quickcheck]
 
       open Diff
@@ -511,7 +485,7 @@ module Tuple4 = struct
     type ('a1, 'a2, 'a3, 'a4) derived_on = ('a1, 'a2, 'a3, 'a4) t
 
     module Entry_diff = struct
-      type ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t =
+      type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t =
         | T1 of 'a1_diff
         | T2 of 'a2_diff
         | T3 of 'a3_diff
@@ -521,8 +495,8 @@ module Tuple4 = struct
 
     open Entry_diff
 
-    type ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t =
-      ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Entry_diff.t list
+    type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t =
+      ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Entry_diff.t list
     [@@deriving sexp, bin_io, quickcheck]
 
     let compare_rank t1 t2 =
@@ -592,17 +566,7 @@ module Tuple4 = struct
       | _ :: _ -> failwith "BUG: non-empty diff after apply"
     ;;
 
-    let of_list_exn
-      of_list1_exn
-      _apply1_exn
-      of_list2_exn
-      _apply2_exn
-      of_list3_exn
-      _apply3_exn
-      of_list4_exn
-      _apply4_exn
-      ts
-      = exclave_
+    let of_list_exn of_list1_exn of_list2_exn of_list3_exn of_list4_exn ts = exclave_
       match ts with
       | [] -> Optional_diff.get_none ()
       | _ :: _ ->
@@ -673,28 +637,9 @@ module Tuple4 = struct
 
     let singleton entry_diff = [ entry_diff ]
 
-    let t_of_sexp
-      a1_of_sexp
-      a2_of_sexp
-      a3_of_sexp
-      a4_of_sexp
-      a1_diff_of_sexp
-      a2_diff_of_sexp
-      a3_diff_of_sexp
-      a4_diff_of_sexp
-      sexp
-      =
+    let t_of_sexp a1_diff_of_sexp a2_diff_of_sexp a3_diff_of_sexp a4_diff_of_sexp sexp =
       let l =
-        t_of_sexp
-          a1_of_sexp
-          a2_of_sexp
-          a3_of_sexp
-          a4_of_sexp
-          a1_diff_of_sexp
-          a2_diff_of_sexp
-          a3_diff_of_sexp
-          a4_diff_of_sexp
-          sexp
+        t_of_sexp a1_diff_of_sexp a2_diff_of_sexp a3_diff_of_sexp a4_diff_of_sexp sexp
         |> List.sort ~compare:compare_rank
       in
       match List.find_consecutive_duplicate l ~equal:equal_rank with
@@ -754,7 +699,7 @@ module Tuple4 = struct
     ;;
   end
 
-  module For_inlined_tuple = struct
+  module Local = struct
     type ('a1, 'a2, 'a3, 'a4) t =
       'a1 Modes.Global.t * 'a2 Modes.Global.t * 'a3 Modes.Global.t * 'a4 Modes.Global.t
     [@@deriving sexp, bin_io]
@@ -762,8 +707,8 @@ module Tuple4 = struct
     module Diff = struct
       type ('a1, 'a2, 'a3, 'a4) derived_on = ('a1, 'a2, 'a3, 'a4) t
 
-      type ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t =
-        ('a1, 'a2, 'a3, 'a4, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Diff.t
+      type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) t =
+        ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff) Diff.t
       [@@deriving sexp, bin_io, quickcheck]
 
       open Diff
@@ -854,7 +799,7 @@ module Tuple5 = struct
     type ('a1, 'a2, 'a3, 'a4, 'a5) derived_on = ('a1, 'a2, 'a3, 'a4, 'a5) t
 
     module Entry_diff = struct
-      type ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t =
+      type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t =
         | T1 of 'a1_diff
         | T2 of 'a2_diff
         | T3 of 'a3_diff
@@ -865,19 +810,8 @@ module Tuple5 = struct
 
     open Entry_diff
 
-    type ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t =
-      ( 'a1
-        , 'a2
-        , 'a3
-        , 'a4
-        , 'a5
-        , 'a1_diff
-        , 'a2_diff
-        , 'a3_diff
-        , 'a4_diff
-        , 'a5_diff )
-        Entry_diff.t
-        list
+    type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t =
+      ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) Entry_diff.t list
     [@@deriving sexp, bin_io, quickcheck]
 
     let compare_rank t1 t2 =
@@ -957,18 +891,7 @@ module Tuple5 = struct
       | _ :: _ -> failwith "BUG: non-empty diff after apply"
     ;;
 
-    let of_list_exn
-      of_list1_exn
-      _apply1_exn
-      of_list2_exn
-      _apply2_exn
-      of_list3_exn
-      _apply3_exn
-      of_list4_exn
-      _apply4_exn
-      of_list5_exn
-      _apply5_exn
-      ts
+    let of_list_exn of_list1_exn of_list2_exn of_list3_exn of_list4_exn of_list5_exn ts
       = exclave_
       match ts with
       | [] -> Optional_diff.get_none ()
@@ -1055,11 +978,6 @@ module Tuple5 = struct
     let singleton entry_diff = [ entry_diff ]
 
     let t_of_sexp
-      a1_of_sexp
-      a2_of_sexp
-      a3_of_sexp
-      a4_of_sexp
-      a5_of_sexp
       a1_diff_of_sexp
       a2_diff_of_sexp
       a3_diff_of_sexp
@@ -1069,11 +987,6 @@ module Tuple5 = struct
       =
       let l =
         t_of_sexp
-          a1_of_sexp
-          a2_of_sexp
-          a3_of_sexp
-          a4_of_sexp
-          a5_of_sexp
           a1_diff_of_sexp
           a2_diff_of_sexp
           a3_diff_of_sexp
@@ -1149,7 +1062,7 @@ module Tuple5 = struct
     ;;
   end
 
-  module For_inlined_tuple = struct
+  module Local = struct
     type ('a1, 'a2, 'a3, 'a4, 'a5) t =
       'a1 Modes.Global.t
       * 'a2 Modes.Global.t
@@ -1161,8 +1074,8 @@ module Tuple5 = struct
     module Diff = struct
       type ('a1, 'a2, 'a3, 'a4, 'a5) derived_on = ('a1, 'a2, 'a3, 'a4, 'a5) t
 
-      type ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t =
-        ('a1, 'a2, 'a3, 'a4, 'a5, 'a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) Diff.t
+      type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) t =
+        ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff) Diff.t
       [@@deriving sexp, bin_io, quickcheck]
 
       open Diff
@@ -1277,19 +1190,7 @@ module Tuple6 = struct
     type ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on = ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) t
 
     module Entry_diff = struct
-      type ('a1
-           , 'a2
-           , 'a3
-           , 'a4
-           , 'a5
-           , 'a6
-           , 'a1_diff
-           , 'a2_diff
-           , 'a3_diff
-           , 'a4_diff
-           , 'a5_diff
-           , 'a6_diff)
-           t =
+      type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff, 'a6_diff) t =
         | T1 of 'a1_diff
         | T2 of 'a2_diff
         | T3 of 'a3_diff
@@ -1301,33 +1202,8 @@ module Tuple6 = struct
 
     open Entry_diff
 
-    type ('a1
-         , 'a2
-         , 'a3
-         , 'a4
-         , 'a5
-         , 'a6
-         , 'a1_diff
-         , 'a2_diff
-         , 'a3_diff
-         , 'a4_diff
-         , 'a5_diff
-         , 'a6_diff)
-         t =
-      ( 'a1
-        , 'a2
-        , 'a3
-        , 'a4
-        , 'a5
-        , 'a6
-        , 'a1_diff
-        , 'a2_diff
-        , 'a3_diff
-        , 'a4_diff
-        , 'a5_diff
-        , 'a6_diff )
-        Entry_diff.t
-        list
+    type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff, 'a6_diff) t =
+      ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff, 'a6_diff) Entry_diff.t list
     [@@deriving sexp, bin_io, quickcheck]
 
     let compare_rank t1 t2 =
@@ -1430,17 +1306,11 @@ module Tuple6 = struct
 
     let of_list_exn
       of_list1_exn
-      _apply1_exn
       of_list2_exn
-      _apply2_exn
       of_list3_exn
-      _apply3_exn
       of_list4_exn
-      _apply4_exn
       of_list5_exn
-      _apply5_exn
       of_list6_exn
-      _apply6_exn
       ts
       = exclave_
       match ts with
@@ -1542,12 +1412,6 @@ module Tuple6 = struct
     let singleton entry_diff = [ entry_diff ]
 
     let t_of_sexp
-      a1_of_sexp
-      a2_of_sexp
-      a3_of_sexp
-      a4_of_sexp
-      a5_of_sexp
-      a6_of_sexp
       a1_diff_of_sexp
       a2_diff_of_sexp
       a3_diff_of_sexp
@@ -1558,12 +1422,6 @@ module Tuple6 = struct
       =
       let l =
         t_of_sexp
-          a1_of_sexp
-          a2_of_sexp
-          a3_of_sexp
-          a4_of_sexp
-          a5_of_sexp
-          a6_of_sexp
           a1_diff_of_sexp
           a2_diff_of_sexp
           a3_diff_of_sexp
@@ -1650,7 +1508,7 @@ module Tuple6 = struct
     ;;
   end
 
-  module For_inlined_tuple = struct
+  module Local = struct
     type ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) t =
       'a1 Modes.Global.t
       * 'a2 Modes.Global.t
@@ -1663,32 +1521,8 @@ module Tuple6 = struct
     module Diff = struct
       type ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) derived_on = ('a1, 'a2, 'a3, 'a4, 'a5, 'a6) t
 
-      type ('a1
-           , 'a2
-           , 'a3
-           , 'a4
-           , 'a5
-           , 'a6
-           , 'a1_diff
-           , 'a2_diff
-           , 'a3_diff
-           , 'a4_diff
-           , 'a5_diff
-           , 'a6_diff)
-           t =
-        ( 'a1
-          , 'a2
-          , 'a3
-          , 'a4
-          , 'a5
-          , 'a6
-          , 'a1_diff
-          , 'a2_diff
-          , 'a3_diff
-          , 'a4_diff
-          , 'a5_diff
-          , 'a6_diff )
-          Diff.t
+      type ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff, 'a6_diff) t =
+        ('a1_diff, 'a2_diff, 'a3_diff, 'a4_diff, 'a5_diff, 'a6_diff) Diff.t
       [@@deriving sexp, bin_io, quickcheck]
 
       open Diff

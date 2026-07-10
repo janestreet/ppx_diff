@@ -474,7 +474,7 @@ module Diff : sig
         { d1 : D1.t
         ; d2 : D2.t
         }
-    | Diff_c of Diffable.Tuples.Tuple2.For_inlined_tuple.Diff.t
+    | Diff_c of Diffable.Tuples.Tuple2.Local.Diff.t
     | Diff_d of D_record.Diff.t
 
   ...
@@ -484,14 +484,14 @@ end
 where
 
 ```ocaml
-type Diffable.Tuples.Tuple2.For_inlined_tuple.Diff.t = Diffable.Tuples.Tuple2.Diff.t
+type Diffable.Tuples.Tuple2.Local.Diff.t = Diffable.Tuples.Tuple2.Diff.t
 ```
 
 Notice that for inlined records the ppx generates a helper module which looks the same as a regular record
 module with `[@@deriving diff]`, but can be calculated from / applied to `local_` values
 of `derived_on`.
 
-Similar helper modules exist for tuples in `Diffable.Tuples.TupleN.For_inlined_tuple`
+Similar helper modules exist for tuples in `Diffable.Tuples.TupleN.Local`
 
 
 # Referencing other types

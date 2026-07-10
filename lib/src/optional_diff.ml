@@ -1,3 +1,5 @@
+open Base
+
 module Diff = struct
   type 'a t = { global_ diff : 'a } [@@unboxed]
 end
